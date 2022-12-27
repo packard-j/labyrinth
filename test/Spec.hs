@@ -1,5 +1,10 @@
 import Test.HUnit
-import Tile (Tile(..), Coordinate(..), Orientation(..), Connector(..), newBoard, tileAtSafe, reachableTiles, tilesConnected, toNodes)
+import Tile (Tile(..), tilesConnected)
+import Connector (Connector(..))
+import Coordinate (Coordinate(..))
+import Orientation (Orientation(..))
+import Board (newBoard, tileAtSafe, reachableTiles, toNodes)
+
 import Data.Set (Set, fromList)
 
 genTile :: Coordinate -> Tile

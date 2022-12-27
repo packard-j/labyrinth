@@ -25,6 +25,10 @@ source-repository head
 
 library
   exposed-modules:
+      Board
+      Connector
+      Coordinate
+      Orientation
       Tile
   other-modules:
       Paths_labyrinth
