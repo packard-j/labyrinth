@@ -1,4 +1,5 @@
-module Orientation (Orientation(..), rotateClockwiseBy) where
+module Orientation (Orientation(..), rotateClockwiseBy, toUnitVector) where
+import Coordinate (Coordinate(..))
 
 data Orientation = North
   | East
@@ -11,6 +12,12 @@ instance Ord Orientation where
 
 rotateClockwiseBy :: Orientation -> Orientation -> Orientation
 rotateClockwiseBy orientation by = intToOrientation (sum $ map orientationToInt [orientation, by])
+
+toUnitVector :: Orientation -> Coordinate
+toUnitVector North = Coordinate 0  (-1)
+toUnitVector East  = Coordinate 1    0
+toUnitVector South = Coordinate 0    1
+toUnitVector West  = Coordinate (-1) 0
 
 orientationToInt :: Orientation -> Integer
 orientationToInt North   = 0

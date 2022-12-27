@@ -3,9 +3,9 @@ import Tile (Tile(..), tilesConnected)
 import Connector (Connector(..))
 import Coordinate (Coordinate(..))
 import Orientation (Orientation(..))
-import Board (newBoard, tileAtSafe, reachableTiles, toNodes)
+import Board (newBoard, tileAtSafe, reachableTiles)
 
-import Data.Set (Set, fromList)
+import Data.Set (fromList)
 
 genTile :: Coordinate -> Tile
 genTile (Coordinate x y) =
@@ -36,24 +36,6 @@ testNotConnected2 = TestCase $
 testConnectedHuh = TestCase $
   assertBool "┐\n┴ should be connected" (tilesConnected (Tile L South) (Tile T South) South)
 
--- │ ─ │
--- └ ┌ ┐
--- ┬ ┤ ┴
-
-testToNodes = TestCase $
-  assertEqual "nodes"
-  (toNodes (newBoard genTile 3 3))
-  [ (Tile Bar North,   Coordinate 0 0, [Coordinate 0 1]),
-    (Tile Bar East,  Coordinate 1 0, []),
-    (Tile Bar South, Coordinate 2 0, []),
-    -- 
-    (Tile L North,   Coordinate 0 1, [Coordinate 0 0]),
-    (Tile L East,  Coordinate 1 1, [Coordinate 2 1, Coordinate 1 2]), 
-    (Tile L South, Coordinate 2 1, [Coordinate 2 2, Coordinate 1 1]),
-    --
-    (Tile T North,   Coordinate 0 2, [Coordinate 1 2]),
-    (Tile T East,  Coordinate 1 2, [Coordinate 1 1, Coordinate 0 2]),
-    (Tile T South, Coordinate 2 2, [Coordinate 2 1]) ]
 
 -- │ ─ │
 -- └ ┌ ┐
@@ -82,7 +64,6 @@ tests = TestList
     TestLabel "connected 3" testConnected3,
     TestLabel "not connected 2" testNotConnected2,
     TestLabel "connected huh?" testConnectedHuh,
-    TestLabel "nodes" testToNodes,
     TestLabel "reachable" testReachable,
     TestLabel "reachable more" testReachable2 ]
 
