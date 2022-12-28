@@ -52,10 +52,10 @@ slide :: Board -> Tile -> Orientation -> Integer -> Maybe (Board, Tile)
 slide board insertedTile dir index
   | index < 0 || index >= bound axis board = Nothing
   | not $ member (axis, index) (movable board) = Nothing
-  | otherwise = Just (shifted, newSpare board dir index) 
+  | otherwise = Just (shiftedBoard, newSpare board dir index) 
   where
     axis = toSlideAxis dir
-    shifted = mapBoard board slideTiles
+    shiftedBoard = mapBoard board slideTiles
     slideTiles coord
       | axisComponent coord /= index = tileAt board coord
       | coord == insertPosition board dir index = insertedTile
