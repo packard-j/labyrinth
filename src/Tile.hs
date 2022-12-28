@@ -5,7 +5,6 @@ import Data.Set (Set, member)
 import qualified Data.Set (map)
 
 data Tile = Tile Connector Orientation
-  deriving Eq
 
 instance Show Tile where
   show (Tile Bar  North) = "│"
@@ -21,6 +20,9 @@ instance Show Tile where
   show (Tile T    South) = "┴"
   show (Tile T    West)  = "├"
   show (Tile Plus _)     = "┼"
+
+instance Eq Tile where
+  t1 == t2 = tileConnections t1 == tileConnections t2
 
 tilesConnected :: Tile -> Tile -> Orientation -> Bool
 tilesConnected t1 t2 North = tilesConnectedVertical t1 t2

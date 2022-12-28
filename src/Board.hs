@@ -1,5 +1,5 @@
 {-# LANGUAGE TupleSections #-}
-module Board (newBoard, slide, reachableTiles, tileAtSafe) where
+module Board (Board, newBoard, slide, reachableTiles, tileAtSafe) where
 import Tile (Tile(..), tilesConnected)
 import Coordinate (Coordinate(..), add)
 import Orientation (Orientation(..), toUnitVector)
@@ -11,7 +11,7 @@ data Board = Board
   { tiles  :: [[Tile]],
     width  :: Integer,
     height :: Integer,
-    movable :: Set (Axis, Integer) }
+    movable :: Set (Axis, Integer) } deriving Eq
 
 instance Show Board where
    show board = 

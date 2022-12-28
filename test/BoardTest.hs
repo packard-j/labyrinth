@@ -16,43 +16,49 @@ genTile (Coordinate x y) =
     connectors   = [Bar, L, T, Plus]
     orientations = [North, East, South, West]
 
-tileAtOrigin :: Test
-tileAtOrigin = 
-  Just (Tile Bar North) ~=? tileAtSafe (newBoard genTile 3 3) (Coordinate 0 0) 
-
 -- │ ─ │
 -- └ ┌ ┐
 -- ┬ ┤ ┴
+board3x3 :: Board
+board3x3 = newBoard genTile 3 3
+
+tileAtOrigin :: Test
+tileAtOrigin = 
+  Just (Tile Bar North) ~=? tileAtSafe board3x3 (Coordinate 0 0) 
 
 slideRow2Left :: Test
 slideRow2Left = TestList
   [ Just (Tile T North)    ~=? newSpare,
     Just (Tile Plus North) ~=? (board >>= \b -> tileAtSafe b (Coordinate 2 2)) ] where
-  (board, newSpare) = munzip $ slide (newBoard genTile 3 3) (Tile Plus North) West 2
+  (board, newSpare) = munzip $ slide board3x3 (Tile Plus North) West 2
 
--- │ ─ │
--- └ ┌ ┐
--- ┬ ┤ ┴
+slideImmovableCol :: Test
+slideImmovableCol = Nothing ~=? slide board3x3 (Tile T East) North 1
+
+slideImmovableRow :: Test
+slideImmovableRow = Nothing ~=? slide board3x3 (Tile L South) East 1
 
 reachableFromOrigin :: Test
 reachableFromOrigin = 
   Just (fromList [Coordinate 0 0, Coordinate 0 1]) ~=?
-  reachableTiles (newBoard genTile 3 3) (Coordinate 0 0)
+  reachableTiles board3x3 (Coordinate 0 0)
 
 reachableFrom2_2 :: Test
 reachableFrom2_2 = 
   Just (fromList [Coordinate 1 1, Coordinate 2 1, Coordinate 0 2, Coordinate 1 2, Coordinate 2 2]) ~=?
-  reachableTiles (newBoard genTile 3 3) (Coordinate 2 2)
+  reachableTiles board3x3 (Coordinate 2 2)
 
 reachableFrom2_1 :: Test
 reachableFrom2_1 =
   Just (fromList [Coordinate 1 1, Coordinate 2 1, Coordinate 0 2, Coordinate 1 2, Coordinate 2 2]) ~=? 
-  reachableTiles (newBoard genTile 3 3) (Coordinate 2 1)
+  reachableTiles board3x3 (Coordinate 2 1)
 
 boardTests :: Test
 boardTests = TestList
   [ "tile at (0,0)"        ~: tileAtOrigin,
     "slide row 1 left"     ~: slideRow2Left,
+    "slide immovable row"  ~: slideImmovableRow,
+    "slide immovable col"  ~: slideImmovableCol,
     "reachable from (0,0)" ~: reachableFromOrigin,
     "reachable from (2,1)" ~: reachableFrom2_2,
     "reachable from (2,1)" ~: reachableFrom2_1]
