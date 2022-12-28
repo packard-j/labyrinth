@@ -8,9 +8,8 @@ data Tile = Tile Connector Orientation
 
 instance Show Tile where
   show (Tile Bar  North) = "│"
-  show (Tile Bar  East)  = "─"
   show (Tile Bar  South) = "│"
-  show (Tile Bar  West)  = "─"
+  show (Tile Bar  _)     = "─"
   show (Tile L    North) = "└"
   show (Tile L    East)  = "┌"
   show (Tile L    South) = "┐"

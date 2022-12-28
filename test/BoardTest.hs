@@ -18,23 +18,26 @@ genTile (Coordinate x y) =
 
 fromString :: String -> Integer -> Integer -> Board
 fromString s width height = newBoard getTile width height where
-  getTile (Coordinate x y) = toTile $ s !! fromIntegral (y * height + x)
-  toTile '│' = Tile Bar North
-  toTile '─' = Tile Bar East
-  toTile '└' = Tile L North
-  toTile '┌' = Tile L East
-  toTile '┐' = Tile L South
-  toTile '┘' = Tile L West
-  toTile '┬' = Tile T North
-  toTile '┤' = Tile T East
-  toTile '┴' = Tile T South
-  toTile '├' = Tile T West
-  toTile '┼' = Tile Plus North
-  toTile c = error ("invalid tile: " ++ [c])
+  getTile (Coordinate x y) = tile $ s !! fromIntegral (y * width + x)
+  
+tile :: Char -> Tile
+tile '│' = Tile Bar North
+tile '─' = Tile Bar East
+tile '└' = Tile L North
+tile '┌' = Tile L East
+tile '┐' = Tile L South
+tile '┘' = Tile L West
+tile '┬' = Tile T North
+tile '┤' = Tile T East
+tile '┴' = Tile T South
+tile '├' = Tile T West
+tile '┼' = Tile Plus North
+tile c = error ("invalid tile: " ++ [c])
 
--- │ ─ │
--- └ ┌ ┐
--- ┬ ┤ ┴
+
+-- │─│
+-- └┌┐
+-- ┬┤┴
 board3x3 :: Board
 board3x3 = newBoard genTile 3 3
 
@@ -50,31 +53,58 @@ board3x3ShiftCol0U = fromString
    "┬┌┐" ++
    "└┤┴") 3 3
 
+board3x2 :: Board
+board3x2 = fromString
+  ("┌─┐" ++
+   "┼┴┤") 3 2
+
+board3x2ShiftRow0R :: Board
+board3x2ShiftRow0R = fromString
+  ("│┌─" ++
+   "┼┴┤") 3 2
+
+board3x2ShiftCol0D :: Board
+board3x2ShiftCol0D = fromString
+  ("└─┐" ++
+   "┌┴┤") 3 2
+
 tileAtOrigin :: Test
 tileAtOrigin = 
-  Just (Tile Bar North) ~=? tileAtSafe board3x3 (Coordinate 0 0) 
+  Just (tile '│') ~=? tileAtSafe board3x3 (Coordinate 0 0) 
 
 tileAt1_2 :: Test
 tileAt1_2 =
-  Just (Tile T East) ~=? tileAtSafe board3x3 (Coordinate 1 2)
+  Just (tile '┤') ~=? tileAtSafe board3x3 (Coordinate 1 2)
 
 slideRow2Left :: Test
 slideRow2Left = TestList
-  [ Just (Tile T North)     ~=? newSpare,
+  [ Just (tile '┬')         ~=? newSpare,
     Just board3x3ShiftRow2L ~=? board ] where
-  (board, newSpare) = munzip $ slide board3x3 (Tile Plus North) West 2
+  (board, newSpare) = munzip $ slide board3x3 (tile '┼') West 2
 
 slideCol0Up :: Test
 slideCol0Up = TestList
-  [ Just (Tile Bar North) ~=? newSpare,
+  [ Just (tile '│')   ~=? newSpare,
     Just board3x3ShiftCol0U ~=? board ] where
-  (board, newSpare) = munzip $ slide board3x3 (Tile L North) North 0
+  (board, newSpare) = munzip $ slide board3x3 (tile '└') North 0
+
+slideRow0Right :: Test
+slideRow0Right = TestList
+  [ Just (tile '┐')     ~=? newSpare,
+    Just board3x2ShiftRow0R ~=? board ] where
+  (board, newSpare) = munzip $ slide board3x2 (tile '│') East 0
+
+slideCol0Down :: Test
+slideCol0Down = TestList
+  [ Just (tile '┼')       ~=? newSpare,
+    Just board3x2ShiftCol0D ~=? board ] where
+  (board, newSpare) = munzip $ slide board3x2 (tile '└') South 0
 
 slideImmovableCol :: Test
-slideImmovableCol = Nothing ~=? slide board3x3 (Tile T East) North 1
+slideImmovableCol = Nothing ~=? slide board3x3 (tile '┤') North 1
 
 slideImmovableRow :: Test
-slideImmovableRow = Nothing ~=? slide board3x3 (Tile L South) East 1
+slideImmovableRow = Nothing ~=? slide board3x3 (tile '┐') East 1
 
 reachableFromOrigin :: Test
 reachableFromOrigin = 
@@ -97,6 +127,8 @@ boardTests = TestList
     "tile at (1,2)"        ~: tileAt1_2,
     "slide row 2 left"     ~: slideRow2Left,
     "slide col 0 up"       ~: slideCol0Up,
+    "slide row 0 right"    ~: slideRow0Right,
+    "slide col 0 down"     ~: slideCol0Down,
     "slide immovable row"  ~: slideImmovableRow,
     "slide immovable col"  ~: slideImmovableCol,
     "reachable from (0,0)" ~: reachableFromOrigin,

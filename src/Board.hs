@@ -2,7 +2,7 @@
 module Board (Board, newBoard, slide, reachableTiles, tileAtSafe) where
 import Tile (Tile(..), tilesConnected)
 import Coordinate (Coordinate(..), add)
-import Orientation (Orientation(..), toUnitVector)
+import Orientation (Orientation(..), toUnitVector, rotateClockwiseBy)
 import Data.Graph (Graph, Vertex, graphFromEdges, reachable)
 import Data.Set (Set, fromList, member)
 import Prelude hiding (Either(..))
@@ -33,39 +33,34 @@ newBoard createTile w h =
         movableCols = map (Column,) (filter even [0..w-1])
 
 slide :: Board -> Tile -> Orientation -> Integer -> Maybe (Board, Tile)
-slide board spare dir = slideAxis board spare (axisOf dir) dir
-  where axisOf North = Row
-        axisOf South = Row
-        axisOf _     = Column
-
-slideAxis :: Board -> Tile -> Axis -> Orientation -> Integer -> Maybe (Board, Tile)
-slideAxis board tile axis dir index
+slide board insertedTile dir index
   | index < 0 || index >= bound axis board = Nothing
   | not $ member (axis, index) (movable board) = Nothing
-  | otherwise = Just (shifted dir, newSpare dir) 
+  | otherwise = Just (shifted, newSpare dir) 
   where
-    shifted North = mapBoard board slideCol
-    shifted South = mapBoard board slideCol
-    shifted East  = mapBoard board slideRow
-    shifted West  = mapBoard board slideRow
-    slideRow (Coordinate x y)
-      | y /= index = tileAt board (Coordinate x y)
-      | x == insertAt = tile
-      | otherwise = tileAt board $ Coordinate (x `op` 1) y
-      where insertAt = if dir == East then 0 else width board - 1
-            op       = if dir == East then (-) else (+)
-    slideCol (Coordinate x y)
-      | x /= index = tileAt board (Coordinate x y)
-      | y == insertAt = tile
-      | otherwise = tileAt board $ Coordinate x (y `op` 1)
-      where insertAt = if dir == North then height board - 1 else 0
-            op       = if dir == North then (+) else (-)
+    axis = toSlideAxis dir
+    shifted = mapBoard board slideTiles
+    slideTiles coord
+      | axisComponent coord /= index = tileAt board coord
+      | coord == insertAt dir = insertedTile
+      | otherwise = tileAt board $ add coord offset
+    axisComponent (Coordinate x y) = if axis == Row then y else x
+    offset = toUnitVector $ rotateClockwiseBy dir South
+    insertAt North = Coordinate index $ height board - 1
+    insertAt South = Coordinate index 0
+    insertAt East  = Coordinate 0 index
+    insertAt West  = Coordinate (width board - 1) index
     newSpare North = tileAt board $ Coordinate index 0
     newSpare South = tileAt board $ Coordinate index (height board - 1)
     newSpare West  = tileAt board $ Coordinate 0 index
     newSpare East  = tileAt board $ Coordinate (width board - 1) index
-    bound Row    = height
-    bound Column = width
+    bound Row    = width
+    bound Column = height
+
+toSlideAxis :: Orientation -> Axis
+toSlideAxis North = Column
+toSlideAxis South = Column
+toSlideAxis     _ = Row
 
 mapBoard :: Board -> (Coordinate -> Tile) -> Board
 mapBoard board f = newBoard f (width board) (height board)
