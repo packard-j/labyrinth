@@ -1,9 +1,10 @@
+{-# LANGUAGE TupleSections #-}
 module Board (newBoard, slide, reachableTiles, tileAtSafe) where
 import Tile (Tile(..), tilesConnected)
 import Coordinate (Coordinate(..), add)
 import Orientation (Orientation(..), toUnitVector)
 import Data.Graph (Graph, Vertex, graphFromEdges, reachable)
-import Data.Set (Set, fromList, empty, member)
+import Data.Set (Set, fromList, member)
 import Prelude hiding (Either(..))
 
 data Board = Board 
@@ -26,9 +27,11 @@ newBoard :: (Coordinate -> Tile) -> Integer -> Integer -> Board
 newBoard createTile w h =
   Board 
     (map (\row -> boardRow createTile row w) [0..h-1])
-    w
-    h
-    empty
+    w h
+    (fromList movableAxes)
+  where movableAxes = movableRows ++ movableCols
+        movableRows = map (Row,)    (filter even [0..h-1])
+        movableCols = map (Column,) (filter even [0..w-1])
 
 slide :: Board -> Tile -> Orientation -> Integer -> Maybe (Board, Tile)
 slide board spare North = slideCol board spare Up
