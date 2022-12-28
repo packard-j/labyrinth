@@ -16,7 +16,7 @@ data Board = Board
 instance Show Board where
    show board = 
      show (width board) ++ "x" ++ show (height board) ++ " board" ++ "\n" ++
-     unlines (map (unwords . map show) (tiles board))
+     unlines (map (concatMap show) (tiles board))
 
 data Axis = Row | Column deriving (Eq, Ord)
 
@@ -26,10 +26,12 @@ data LeftOrRight = Left | Right
 newBoard :: (Coordinate -> Tile) -> Integer -> Integer -> Board
 newBoard createTile w h =
   Board 
-    (map (\row -> boardRow createTile row w) [0..h-1])
+    (map boardRow [0..h-1])
     w h
     (fromList movableAxes)
-  where movableAxes = movableRows ++ movableCols
+  where boardRow row =
+          map (\col -> createTile $ Coordinate col row) [0..w-1]
+        movableAxes = movableRows ++ movableCols
         movableRows = map (Row,)    (filter even [0..h-1])
         movableCols = map (Column,) (filter even [0..w-1])
 
@@ -48,12 +50,14 @@ slideRow board tile dir row
     shifted  Right = mapBoard board slideRight
     newSpare Left  = tileAt board $ Coordinate 0 row
     newSpare Right = tileAt board $ Coordinate (width board - 1) row
-    slideLeft  (Coordinate x _)
+    slideLeft  (Coordinate x y)
+      | y /= row = tileAt board (Coordinate x y)
       | x == width board - 1 = tile
-      | otherwise = tileAt board $ Coordinate (x + 1) row
-    slideRight (Coordinate x _)
+      | otherwise = tileAt board $ Coordinate (x + 1) y
+    slideRight (Coordinate x y)
+      | y /= row = tileAt board (Coordinate x y)
       | x == 0 = tile
-      | otherwise = tileAt board $ Coordinate (x - 1) row
+      | otherwise = tileAt board $ Coordinate (x - 1) y
 
 slideCol :: Board -> Tile -> UpOrDown -> Integer -> Maybe (Board, Tile)
 slideCol board tile dir col
@@ -64,10 +68,12 @@ slideCol board tile dir col
     shifted  Down = mapBoard board slideDown
     newSpare Up   = tileAt board $ Coordinate col 0
     newSpare Down = tileAt board $ Coordinate col (height board - 1)
-    slideUp   (Coordinate _ y)
+    slideUp   (Coordinate x y)
+      | x /= col = tileAt board (Coordinate x y)
       | y == height board - 1 = tile
       | otherwise = tileAt board $ Coordinate col (y + 1)
-    slideDown (Coordinate _ y)
+    slideDown (Coordinate x y)
+      | x /= col = tileAt board (Coordinate x y)
       | y == 0 = tile
       | otherwise = tileAt board $ Coordinate col (y - 1)
 
@@ -85,10 +91,6 @@ reachableTiles board coordinate =
     do
      vertex <- vertexFromCoord coordinate
      return $ fromList (map coordFromVertex $ reachable graph vertex)
-
-boardRow :: (Coordinate -> Tile) -> Integer -> Integer -> [Tile]
-boardRow createTile row w =
-  map (createTile . Coordinate row) [0..w-1]
 
 isOnBoard :: Board -> Coordinate -> Bool
 isOnBoard board (Coordinate x y)
