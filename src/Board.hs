@@ -52,26 +52,35 @@ slide :: Board -> Tile -> Orientation -> Integer -> Maybe (Board, Tile)
 slide board insertedTile dir index
   | index < 0 || index >= bound axis board = Nothing
   | not $ member (axis, index) (movable board) = Nothing
-  | otherwise = Just (shifted, newSpare dir) 
+  | otherwise = Just (shifted, newSpare board dir index) 
   where
     axis = toSlideAxis dir
     shifted = mapBoard board slideTiles
     slideTiles coord
       | axisComponent coord /= index = tileAt board coord
-      | coord == insertAt dir = insertedTile
+      | coord == insertPosition board dir index = insertedTile
       | otherwise = tileAt board $ add coord offset
     axisComponent (Coordinate x y) = if axis == Row then y else x
     offset = toUnitVector $ rotateClockwiseBy dir South
-    insertAt North = Coordinate index $ height board - 1
-    insertAt South = Coordinate index 0
-    insertAt East  = Coordinate 0 index
-    insertAt West  = Coordinate (width board - 1) index
-    newSpare North = tileAt board $ Coordinate index 0
-    newSpare South = tileAt board $ Coordinate index (height board - 1)
-    newSpare West  = tileAt board $ Coordinate 0 index
-    newSpare East  = tileAt board $ Coordinate (width board - 1) index
     bound Row    = width
     bound Column = height
+
+-- | Produces the coordinate at which a spare tile will be inserted for
+-- | the given shift direction and (valid) axis index
+insertPosition :: Board -> Orientation -> Integer -> Coordinate
+insertPosition board North index = Coordinate index $ height board - 1
+insertPosition     _ South index = Coordinate index 0
+insertPosition     _ East  index = Coordinate 0 index
+insertPosition board West  index = Coordinate (width board - 1) index
+
+-- | Produces the tile that becomes the spare after a shift in the given direction
+-- | along the axis specified by the (valid) axis index
+newSpare :: Board -> Orientation -> Integer -> Tile
+newSpare board dir index = tileAt board $ sparePosition dir where
+  sparePosition North = Coordinate index 0
+  sparePosition South = Coordinate index $ height board - 1
+  sparePosition West  = Coordinate 0 index
+  sparePosition East  = Coordinate (width board - 1) index
 
 -- | Produces the axis along which a slide towards the given Orientation will occur
 toSlideAxis :: Orientation -> Axis
