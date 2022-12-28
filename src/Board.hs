@@ -7,10 +7,16 @@ import Data.Graph (Graph, Vertex, graphFromEdges, reachable)
 import Data.Set (Set, fromList, member)
 import Prelude hiding (Either(..))
 
+-- | Represents the game board of labyrinth, which consists of Tiles that
+-- | can be slid along rows or columns.
+-- | Only certain rows and columns can be slid, as designated by the `movable` field.
 data Board = Board 
   { tiles  :: [[Tile]],
+    -- | The width of the board, in number of columns
     width  :: Integer,
+    -- | The height of the board, in number of columns
     height :: Integer,
+    -- | The set of axes that can be shifted, and their 0-indexed position on the board (from top-left)
     movable :: Set (Axis, Integer) } deriving Eq
 
 instance Show Board where
@@ -18,8 +24,11 @@ instance Show Board where
      show (width board) ++ "x" ++ show (height board) ++ " board" ++ "\n" ++
      unlines (map (concatMap show) (tiles board))
 
+-- | Represents a row or column along a Board
 data Axis = Row | Column deriving (Eq, Ord)
 
+-- | Create a new Board consisting of tiles using the `createTile` mapping of coordinates to tiles,
+-- | with the size specified by the given width and height
 newBoard :: (Coordinate -> Tile) -> Integer -> Integer -> Board
 newBoard createTile w h =
   Board 
@@ -32,6 +41,13 @@ newBoard createTile w h =
         movableRows = map (Row,)    (filter even [0..h-1])
         movableCols = map (Column,) (filter even [0..w-1])
 
+-- | Slide an axis (row or column) of a board by inserting a tile, producing a shifted board and a new
+-- | spare tile that slid out from the other side.
+-- | The axis is specified by the Orientation of the slide and the 0-indexed position of the axis.
+-- | For example:
+-- |  Sliding North with index 0 slides the leftmost column up, inserting the new tile at the bottom
+-- |  and producing a new spare tile that came from the top of that column.
+-- | If the axis is not movable or the index is out of bounds, Nothing is returned.
 slide :: Board -> Tile -> Orientation -> Integer -> Maybe (Board, Tile)
 slide board insertedTile dir index
   | index < 0 || index >= bound axis board = Nothing
@@ -57,19 +73,26 @@ slide board insertedTile dir index
     bound Row    = width
     bound Column = height
 
+-- | Produces the axis along which a slide towards the given Orientation will occur
 toSlideAxis :: Orientation -> Axis
 toSlideAxis North = Column
 toSlideAxis South = Column
 toSlideAxis     _ = Row
 
+-- | Produces new equal sized board from the given board with tiles specified by `f`
 mapBoard :: Board -> (Coordinate -> Tile) -> Board
 mapBoard board f = newBoard f (width board) (height board)
 
+-- | Access the Tile on the Board at the given Coordinate
+-- | If the coordinate is outside the bounds of the Board, Nothing is returned
 tileAtSafe :: Board -> Coordinate -> Maybe Tile
 tileAtSafe board coordinate
   | isOnBoard board coordinate = Just $ tileAt board coordinate
   | otherwise = Nothing
 
+-- | What are the coordinates of the tiles that can be reached from the tile at the given coordinate?
+-- | This corresponds to the given tile, all the tiles it directly connects to, and all the 
+-- | tiles reachable from those.
 reachableTiles :: Board -> Coordinate -> Maybe (Set Coordinate)
 reachableTiles board coordinate = 
   let (graph, coordFromVertex, vertexFromCoord) = toGraph board in 
@@ -77,35 +100,45 @@ reachableTiles board coordinate =
      vertex <- vertexFromCoord coordinate
      return $ fromList (map coordFromVertex $ reachable graph vertex)
 
+-- | Is the given coordinate within the bounds of the board?
 isOnBoard :: Board -> Coordinate -> Bool
 isOnBoard board (Coordinate x y)
   | x < 0 || x >= width board  = False
   | y < 0 || y >= height board = False
   | otherwise                  = True
 
+-- | Access the tile at the given coordinate, without bounds checking.
 tileAt :: Board -> Coordinate -> Tile
 tileAt board (Coordinate x y) = tiles board !! fromIntegral y !! fromIntegral x
 
+-- | Convert the board to a Graph, and functions that map to and from Graph vertices
 toGraph :: Board -> (Graph, Vertex -> Coordinate, Coordinate -> Maybe Vertex)
 toGraph board = (graph, coordFromVertex, vertexFromCoord)
-  where (graph, nodeFromVertex, vertexFromCoord) = graphFromEdges $ toNodes board
+  where (graph, nodeFromVertex, vertexFromCoord) = graphFromEdges $ toAdjacencyList board
         coordFromVertex v = second (nodeFromVertex v)
         second (_, x, _) = x
 
-toNodes :: Board -> [(Tile, Coordinate, [Coordinate])]
-toNodes board = map toNode $ tileList board
+-- | Convert the board to an adjacency list of tiles, their coordinates, and the coordinates
+-- | of the tiles they directly connect to.
+toAdjacencyList :: Board -> [(Tile, Coordinate, [Coordinate])]
+toAdjacencyList board = map toNode $ tileList board
   where toNode (coord, tile) = (tile, coord, map fst (connectedAdjacentTiles board coord))
 
+-- | Produces a list of coordinates on a board, paired with the tiles at those coordinates.
 tileList :: Board -> [(Coordinate, Tile)]
 tileList board = concatMap iterateBoardRow [0..height board - 1]
   where iterateBoardRow r = map (\c -> (Coordinate c r, tileAt board (Coordinate c r))) [0..width board - 1]
 
+-- | Produces a list of coordinates on the board that are ajacent (one tile away in a cardinal direction)
+-- | to the given coordinate.
 adjacentCoordinates :: Board -> Coordinate -> [(Coordinate, Orientation)]
 adjacentCoordinates board coordinate = filter (isOnBoard board . fst) adjacents
   where orientations = [North, East, South, West]
         offsets = map toUnitVector orientations 
         adjacents = zip (map (add coordinate) offsets) orientations
 
+-- | Produces a list of tiles that are directly connected to the tile at the given coordinate, pair with
+-- | their coordinates on the board.
 connectedAdjacentTiles :: Board -> Coordinate -> [(Coordinate, Tile)]
 connectedAdjacentTiles board coordinate = map tileOnBoard (filter isConnected $ adjacentCoordinates board coordinate)
   where fromTile = tileAt board coordinate
