@@ -44,26 +44,22 @@ slideAxis board tile axis dir index
   | not $ member (axis, index) (movable board) = Nothing
   | otherwise = Just (shifted dir, newSpare dir) 
   where
-    shifted North = mapBoard board slideUp
-    shifted South = mapBoard board slideDown
-    shifted East  = mapBoard board slideRight
-    shifted West  = mapBoard board slideLeft
-    slideLeft  (Coordinate x y)
+    shifted North = mapBoard board slideCol
+    shifted South = mapBoard board slideCol
+    shifted East  = mapBoard board slideRow
+    shifted West  = mapBoard board slideRow
+    slideRow (Coordinate x y)
       | y /= index = tileAt board (Coordinate x y)
-      | x == width board - 1 = tile
-      | otherwise = tileAt board $ Coordinate (x + 1) y
-    slideRight (Coordinate x y)
-      | y /= index = tileAt board (Coordinate x y)
-      | x == 0 = tile
-      | otherwise = tileAt board $ Coordinate (x - 1) y
-    slideUp   (Coordinate x y)
+      | x == insertAt = tile
+      | otherwise = tileAt board $ Coordinate (x `op` 1) y
+      where insertAt = if dir == East then 0 else width board - 1
+            op       = if dir == East then (-) else (+)
+    slideCol (Coordinate x y)
       | x /= index = tileAt board (Coordinate x y)
-      | y == height board - 1 = tile
-      | otherwise = tileAt board $ Coordinate x (y + 1)
-    slideDown (Coordinate x y)
-      | x /= index = tileAt board (Coordinate x y)
-      | y == 0 = tile
-      | otherwise = tileAt board $ Coordinate x (y - 1)
+      | y == insertAt = tile
+      | otherwise = tileAt board $ Coordinate x (y `op` 1)
+      where insertAt = if dir == North then height board - 1 else 0
+            op       = if dir == North then (+) else (-)
     newSpare North = tileAt board $ Coordinate index 0
     newSpare South = tileAt board $ Coordinate index (height board - 1)
     newSpare West  = tileAt board $ Coordinate 0 index
