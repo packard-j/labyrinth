@@ -20,9 +20,6 @@ instance Show Board where
 
 data Axis = Row | Column deriving (Eq, Ord)
 
-data UpOrDown = Up | Down
-data LeftOrRight = Left | Right
-
 newBoard :: (Coordinate -> Tile) -> Integer -> Integer -> Board
 newBoard createTile w h =
   Board 
@@ -36,46 +33,43 @@ newBoard createTile w h =
         movableCols = map (Column,) (filter even [0..w-1])
 
 slide :: Board -> Tile -> Orientation -> Integer -> Maybe (Board, Tile)
-slide board spare North = slideCol board spare Up
-slide board spare South = slideCol board spare Down
-slide board spare East  = slideRow board spare Right
-slide board spare West  = slideRow board spare Left
+slide board spare dir = slideAxis board spare (axisOf dir) dir
+  where axisOf North = Row
+        axisOf South = Row
+        axisOf _     = Column
 
-slideRow :: Board -> Tile -> LeftOrRight -> Integer -> Maybe (Board, Tile)
-slideRow board tile dir row
-  | row < 0 || row >= height board = Nothing
-  | not $ member (Row, row) (movable board) = Nothing
-  | otherwise = Just (shifted dir, newSpare dir) where
-    shifted  Left  = mapBoard board slideLeft
-    shifted  Right = mapBoard board slideRight
-    newSpare Left  = tileAt board $ Coordinate 0 row
-    newSpare Right = tileAt board $ Coordinate (width board - 1) row
+slideAxis :: Board -> Tile -> Axis -> Orientation -> Integer -> Maybe (Board, Tile)
+slideAxis board tile axis dir index
+  | index < 0 || index >= bound axis board = Nothing
+  | not $ member (axis, index) (movable board) = Nothing
+  | otherwise = Just (shifted dir, newSpare dir) 
+  where
+    shifted North = mapBoard board slideUp
+    shifted South = mapBoard board slideDown
+    shifted East  = mapBoard board slideRight
+    shifted West  = mapBoard board slideLeft
     slideLeft  (Coordinate x y)
-      | y /= row = tileAt board (Coordinate x y)
+      | y /= index = tileAt board (Coordinate x y)
       | x == width board - 1 = tile
       | otherwise = tileAt board $ Coordinate (x + 1) y
     slideRight (Coordinate x y)
-      | y /= row = tileAt board (Coordinate x y)
+      | y /= index = tileAt board (Coordinate x y)
       | x == 0 = tile
       | otherwise = tileAt board $ Coordinate (x - 1) y
-
-slideCol :: Board -> Tile -> UpOrDown -> Integer -> Maybe (Board, Tile)
-slideCol board tile dir col
-  | col < 0 || col >= width board = Nothing
-  | not $ member (Column, col) (movable board) = Nothing
-  | otherwise = Just (shifted dir, newSpare dir) where
-    shifted  Up   = mapBoard board slideUp
-    shifted  Down = mapBoard board slideDown
-    newSpare Up   = tileAt board $ Coordinate col 0
-    newSpare Down = tileAt board $ Coordinate col (height board - 1)
     slideUp   (Coordinate x y)
-      | x /= col = tileAt board (Coordinate x y)
+      | x /= index = tileAt board (Coordinate x y)
       | y == height board - 1 = tile
-      | otherwise = tileAt board $ Coordinate col (y + 1)
+      | otherwise = tileAt board $ Coordinate x (y + 1)
     slideDown (Coordinate x y)
-      | x /= col = tileAt board (Coordinate x y)
+      | x /= index = tileAt board (Coordinate x y)
       | y == 0 = tile
-      | otherwise = tileAt board $ Coordinate col (y - 1)
+      | otherwise = tileAt board $ Coordinate x (y - 1)
+    newSpare North = tileAt board $ Coordinate index 0
+    newSpare South = tileAt board $ Coordinate index (height board - 1)
+    newSpare West  = tileAt board $ Coordinate 0 index
+    newSpare East  = tileAt board $ Coordinate (width board - 1) index
+    bound Row    = height
+    bound Column = width
 
 mapBoard :: Board -> (Coordinate -> Tile) -> Board
 mapBoard board f = newBoard f (width board) (height board)
