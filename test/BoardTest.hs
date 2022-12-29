@@ -6,6 +6,7 @@ import Connector
 import Coordinate
 import Orientation
 import Data.Set (fromList)
+import Control.Monad (foldM)
 import Control.Monad.Zip (munzip)
 
 genTile :: Coordinate -> Tile
@@ -34,6 +35,10 @@ tile '├' = Tile T West
 tile '┼' = Tile Plus North
 tile c = error ("invalid tile: " ++ [c])
 
+-- | Perform N successive slides, each one using the spare tile from the previous
+slideN :: Board -> Tile -> [(Orientation, Integer)] -> Maybe (Board, Tile)
+slideN board spare = foldM slideOne (board, spare) where
+  slideOne (b, s) (dir, index) = slide b s dir index
 
 -- │─│
 -- └┌┐
@@ -100,6 +105,12 @@ slideCol0Down = TestList
     Just board3x2ShiftCol0D ~=? board ] where
   (board, newSpare) = munzip $ slide board3x2 (tile '└') South 0
 
+unslide :: Test
+unslide = TestList
+  [ Just (tile '┼') ~=? spare,
+    Just board3x3   ~=? board ] where
+  (board, spare) = munzip $ slideN board3x3 (tile '┼') [(North, 0), (South, 0), (East, 2), (West, 2)]
+
 slideImmovableCol :: Test
 slideImmovableCol = Nothing ~=? slide board3x3 (tile '┤') North 1
 
@@ -131,6 +142,7 @@ boardTests = TestList
     "slide col 0 down"     ~: slideCol0Down,
     "slide immovable row"  ~: slideImmovableRow,
     "slide immovable col"  ~: slideImmovableCol,
+    "unslide"              ~: unslide,
     "reachable from (0,0)" ~: reachableFromOrigin,
     "reachable from (2,1)" ~: reachableFrom2_2,
     "reachable from (2,1)" ~: reachableFrom2_1]
