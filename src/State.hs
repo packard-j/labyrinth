@@ -1,4 +1,4 @@
-module State (State, PlayerPieces(..), newState, newStateWithSlide, move) where
+module State (State, PlayerPieces(..), newState, newStateWithSlide, move, kick) where
 import Board
 import Tile
 import Coordinate
@@ -69,6 +69,14 @@ move state dir axis to
                   reachedGoal $ head updatedPlayers) where
       reachedGoal p = position p == goal p
       slideAction = Just (dir, axis)
+
+-- | Remove the current player from the game state.
+-- | Produces the game state without that player, and the player (if the 
+-- | state had any players)
+kick :: State p -> (State p, Maybe p)
+kick state
+  | null $ players state = (state, Nothing)
+  | otherwise = (state { players = tail $ players state }, Just $ player $ head $ players state)
 
 -- | Update the player positions in response to a slide and move action.
 -- | All players on the affected row or column will be shifted, then the current
