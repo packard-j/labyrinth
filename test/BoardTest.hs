@@ -1,77 +1,18 @@
 module BoardTest (boardTests) where
 import Test.HUnit
+import Examples.Board
 import Board
 import Tile
-import Connector
 import Coordinate
 import Orientation
 import Data.Set (fromList)
 import Control.Monad (foldM)
 import Control.Monad.Zip (munzip)
 
-genTile :: Coordinate -> Tile
-genTile (Coordinate x y) =
-  Tile (connectors   !! fromIntegral (y `mod` fromIntegral (length connectors)))
-       (orientations !! fromIntegral (x `mod` fromIntegral (length orientations)))
-  where
-    connectors   = [Bar, L, T, Plus]
-    orientations = [North, East, South, West]
-
-fromString :: String -> Integer -> Integer -> Board
-fromString s width height = newBoard getTile width height where
-  getTile (Coordinate x y) = tile $ s !! fromIntegral (y * width + x)
-  
-tile :: Char -> Tile
-tile '│' = Tile Bar North
-tile '─' = Tile Bar East
-tile '└' = Tile L North
-tile '┌' = Tile L East
-tile '┐' = Tile L South
-tile '┘' = Tile L West
-tile '┬' = Tile T North
-tile '┤' = Tile T East
-tile '┴' = Tile T South
-tile '├' = Tile T West
-tile '┼' = Tile Plus North
-tile c = error ("invalid tile: " ++ [c])
-
 -- | Perform N successive slides, each one using the spare tile from the previous
 slideN :: Board -> Tile -> [(Orientation, Integer)] -> Maybe (Board, Tile)
 slideN board spare = foldM slideOne (board, spare) where
   slideOne (b, s) (dir, index) = slide b s dir index
-
--- │─│
--- └┌┐
--- ┬┤┴
-board3x3 :: Board
-board3x3 = newBoard genTile 3 3
-
-board3x3ShiftRow2L :: Board
-board3x3ShiftRow2L = fromString
-  ("│─│" ++
-   "└┌┐" ++
-   "┤┴┼") 3 3
-
-board3x3ShiftCol0U :: Board
-board3x3ShiftCol0U = fromString
-  ("└─│" ++
-   "┬┌┐" ++
-   "└┤┴") 3 3
-
-board3x2 :: Board
-board3x2 = fromString
-  ("┌─┐" ++
-   "┼┴┤") 3 2
-
-board3x2ShiftRow0R :: Board
-board3x2ShiftRow0R = fromString
-  ("│┌─" ++
-   "┼┴┤") 3 2
-
-board3x2ShiftCol0D :: Board
-board3x2ShiftCol0D = fromString
-  ("└─┐" ++
-   "┌┴┤") 3 2
 
 tileAtOrigin :: Test
 tileAtOrigin = 
