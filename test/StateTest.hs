@@ -43,9 +43,31 @@ state3x3Unmoved = Nothing ~=? actual where
     state <- state3x3
     move state East 2 $ Coordinate 0 2
 
+state3x3Kick :: Test
+state3x3Kick = expected ~=? kick <$> state3x3 where
+  expected = do
+    state <- expectedState
+    return (state, Just kickedPlayer)
+  expectedState = newState board3x3 (tile '└') remainingPlayers
+  remainingPlayers =
+    [ PlayerPieces (Coordinate 1 1)
+                   (Coordinate 1 1)
+                   (Coordinate 2 1)
+                   'b' ]
+  kickedPlayer = 'a'
+
+stateKickEmpty :: Test
+stateKickEmpty = expected ~=? kick <$> emptyState where
+  expected = do
+    state <- emptyState
+    return (state, Nothing)
+  emptyState = newState board3x3 (tile '└') [] :: Maybe (State.State Char)
+
 stateTests :: Test
 stateTests = TestList 
   [ "move player a to (0,1)" ~: state3x3Move,
     "cannot place a home on a movable tile" ~: state3x3InvalidHome,
     "cannot move to the same tile" ~: state3x3Unmoved,
-    "cannot move player a to (0,0)" ~: state3x3Unreachable ]
+    "cannot move player a to (0,0)" ~: state3x3Unreachable,
+    "kick player a" ~: state3x3Kick,
+    "kick with no players remaining" ~: stateKickEmpty ]
