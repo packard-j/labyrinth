@@ -46,22 +46,29 @@ newStateWithSlide prevSlide gameBoard spareTile playerPieces
     where coords = position <$> playerPieces
           homesAndGoals = concatMap (\p -> [home p, goal p]) playerPieces
 
--- | Perform a slide and move action as the current player in the turn-order.
+-- | Perform a slide and move action as the current player in the turn-order,
+-- | producing the new state and whether the action resulted in the player
+-- | landing on its goal tile.
 -- | The slide is specified by the orientation to slide towards and the index
 -- | of the axis. The destination to move the current player to is specified
 -- | by the coordinate.
 -- | Nothing is returned if:
+-- |   * no players exist in the state
 -- |   * the slide cannot be performed
 -- |   * the player cannot move to the specified destination after the slide
 -- |   * the specified destination is the same as the player's position after
 -- |     the slide.
-move :: State p -> Orientation -> Integer -> Coordinate -> Maybe (State p)
+move :: State p -> Orientation -> Integer -> Coordinate -> Maybe (State p, Bool)
 move state dir axis to 
+  | null $ players state = Nothing
   | lastSlide state == Just (rotateClockwiseBy dir South, axis) = Nothing
   | otherwise = do
     (shiftedBoard, nextSpare) <- slide (board state) (spare state) dir axis
-    nextPlayers <- updatePlayers shiftedBoard (players state) dir axis to
-    return $ State shiftedBoard (Just (dir, axis)) nextSpare (rotate nextPlayers)
+    updatedPlayers <- updatePlayers shiftedBoard (players state) dir axis to
+    return (State shiftedBoard slideAction nextSpare (rotate updatedPlayers),
+                  reachedGoal $ head updatedPlayers) where
+      reachedGoal p = position p == goal p
+      slideAction = Just (dir, axis)
 
 -- | Update the player positions in response to a slide and move action.
 -- | All players on the affected row or column will be shifted, then the current
@@ -88,8 +95,8 @@ shiftPlayer b dir axis p = p
 
 -- | Move a player to the specified coordinate on the board, if possible.
 movePlayer :: Board -> PlayerPieces p -> Coordinate -> Maybe (PlayerPieces p)
-movePlayer b pieces to = do
-  canMove <- pathExists b (position pieces) to
+movePlayer gameBoard pieces to = do
+  canMove <- pathExists gameBoard (position pieces) to
   if canMove then return moved else Nothing where
     moved = pieces { position = to }
 

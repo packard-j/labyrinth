@@ -1,3 +1,4 @@
+{-# LANGUAGE TupleSections #-}
 module StateTest (stateTests) where
 import Test.HUnit
 import Examples.State
@@ -11,7 +12,7 @@ state3x3Move = expected ~=? actual where
   actual = do
     state <- state3x3
     move state North 0 $ Coordinate 0 1 
-  expected = newStateWithSlide (Just (North, 0)) board3x3ShiftCol0U (tile '│') expectedPlayers
+  expected = (,False) <$> newStateWithSlide (Just (North, 0)) board3x3ShiftCol0U (tile '│') expectedPlayers
   expectedPlayers =
     [ PlayerPieces (Coordinate 1 1)
                    (Coordinate 1 1)
