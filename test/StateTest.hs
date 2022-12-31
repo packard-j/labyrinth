@@ -37,8 +37,15 @@ state3x3Unreachable = Nothing ~=? invalidMove where
     state <- state3x3
     move state North 0 $ Coordinate 0 0
 
+state3x3Unmoved :: Test
+state3x3Unmoved = Nothing ~=? actual where
+  actual = do
+    state <- state3x3
+    move state East 2 $ Coordinate 0 2
+
 stateTests :: Test
 stateTests = TestList 
   [ "move player a to (0,1)" ~: state3x3Move,
     "cannot place a home on a movable tile" ~: state3x3InvalidHome,
+    "cannot move to the same tile" ~: state3x3Unmoved,
     "cannot move player a to (0,0)" ~: state3x3Unreachable ]
