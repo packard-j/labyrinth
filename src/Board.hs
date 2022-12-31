@@ -1,5 +1,10 @@
 {-# LANGUAGE TupleSections #-}
-module Board (Board, newBoard, slide, reachableTiles, tileAtSafe) where
+module Board
+  (Board, newBoard,
+   slide, shiftAlong,
+   reachableTiles, pathExists,
+   tileAtSafe,
+   isOnBoard, isOnFixedTile) where
 import Tile (Tile(..), tilesConnected)
 import Coordinate (Coordinate(..), add)
 import Orientation (Orientation(..), toUnitVector, rotateClockwiseBy)
@@ -109,12 +114,37 @@ reachableTiles board coordinate =
      vertex <- vertexFromCoord coordinate
      return $ fromList (map coordFromVertex $ reachable graph vertex)
 
+-- | Is the tile at the given coordinate reachable from the other coordinate?
+pathExists :: Board -> Coordinate -> Coordinate -> Maybe Bool
+pathExists board from to = member to <$> reachableTiles board from
+
+-- | Shifts a coordinate along with a slide action as specified by the orientation and index of the axis.
+shiftAlong :: Board -> Orientation -> Integer -> Coordinate -> Coordinate
+shiftAlong board dir index from = if affected then to else from where
+  affected = case (toSlideAxis dir, from) of
+               (Row,    Coordinate _ y) -> y == index
+               (Column, Coordinate x _) -> x == index
+  to = slideWrap board dir from
+
+-- | Slide a coordinate in the specified direction, looping around to the other side if it reaches
+-- | the end.
+slideWrap :: Board -> Orientation -> Coordinate -> Coordinate
+slideWrap board dir coord = wrap $ add coord (toUnitVector dir) where
+  wrap (Coordinate x y) = Coordinate (x `mod` width board) (y `mod` height board)
+
 -- | Is the given coordinate within the bounds of the board?
 isOnBoard :: Board -> Coordinate -> Bool
 isOnBoard board (Coordinate x y)
   | x < 0 || x >= width board  = False
   | y < 0 || y >= height board = False
   | otherwise                  = True
+
+-- | Does the given coordinate correspond to a tile that cannot be moved?
+isOnFixedTile :: Board -> Coordinate -> Bool
+isOnFixedTile board (Coordinate x y) = 
+  isOnBoard board (Coordinate x y) && onImmovableRow && onImmovableCol where
+  onImmovableRow = not $ member (Column, x) (movable board)
+  onImmovableCol = not $ member (Row, y)    (movable board)
 
 -- | Access the tile at the given coordinate, without bounds checking.
 tileAt :: Board -> Coordinate -> Tile

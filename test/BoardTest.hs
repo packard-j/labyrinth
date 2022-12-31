@@ -1,72 +1,18 @@
 module BoardTest (boardTests) where
 import Test.HUnit
+import Examples.Board
 import Board
 import Tile
-import Connector
 import Coordinate
 import Orientation
 import Data.Set (fromList)
+import Control.Monad (foldM)
 import Control.Monad.Zip (munzip)
 
-genTile :: Coordinate -> Tile
-genTile (Coordinate x y) =
-  Tile (connectors   !! fromIntegral (y `mod` fromIntegral (length connectors)))
-       (orientations !! fromIntegral (x `mod` fromIntegral (length orientations)))
-  where
-    connectors   = [Bar, L, T, Plus]
-    orientations = [North, East, South, West]
-
-fromString :: String -> Integer -> Integer -> Board
-fromString s width height = newBoard getTile width height where
-  getTile (Coordinate x y) = tile $ s !! fromIntegral (y * width + x)
-  
-tile :: Char -> Tile
-tile '│' = Tile Bar North
-tile '─' = Tile Bar East
-tile '└' = Tile L North
-tile '┌' = Tile L East
-tile '┐' = Tile L South
-tile '┘' = Tile L West
-tile '┬' = Tile T North
-tile '┤' = Tile T East
-tile '┴' = Tile T South
-tile '├' = Tile T West
-tile '┼' = Tile Plus North
-tile c = error ("invalid tile: " ++ [c])
-
-
--- │─│
--- └┌┐
--- ┬┤┴
-board3x3 :: Board
-board3x3 = newBoard genTile 3 3
-
-board3x3ShiftRow2L :: Board
-board3x3ShiftRow2L = fromString
-  ("│─│" ++
-   "└┌┐" ++
-   "┤┴┼") 3 3
-
-board3x3ShiftCol0U :: Board
-board3x3ShiftCol0U = fromString
-  ("└─│" ++
-   "┬┌┐" ++
-   "└┤┴") 3 3
-
-board3x2 :: Board
-board3x2 = fromString
-  ("┌─┐" ++
-   "┼┴┤") 3 2
-
-board3x2ShiftRow0R :: Board
-board3x2ShiftRow0R = fromString
-  ("│┌─" ++
-   "┼┴┤") 3 2
-
-board3x2ShiftCol0D :: Board
-board3x2ShiftCol0D = fromString
-  ("└─┐" ++
-   "┌┴┤") 3 2
+-- | Perform N successive slides, each one using the spare tile from the previous
+slideN :: Board -> Tile -> [(Orientation, Integer)] -> Maybe (Board, Tile)
+slideN board spare = foldM slideOne (board, spare) where
+  slideOne (b, s) (dir, index) = slide b s dir index
 
 tileAtOrigin :: Test
 tileAtOrigin = 
@@ -100,6 +46,12 @@ slideCol0Down = TestList
     Just board3x2ShiftCol0D ~=? board ] where
   (board, newSpare) = munzip $ slide board3x2 (tile '└') South 0
 
+unslide :: Test
+unslide = TestList
+  [ Just (tile '┼') ~=? spare,
+    Just board3x3   ~=? board ] where
+  (board, spare) = munzip $ slideN board3x3 (tile '┼') [(North, 0), (South, 0), (East, 2), (West, 2)]
+
 slideImmovableCol :: Test
 slideImmovableCol = Nothing ~=? slide board3x3 (tile '┤') North 1
 
@@ -131,6 +83,7 @@ boardTests = TestList
     "slide col 0 down"     ~: slideCol0Down,
     "slide immovable row"  ~: slideImmovableRow,
     "slide immovable col"  ~: slideImmovableCol,
+    "unslide"              ~: unslide,
     "reachable from (0,0)" ~: reachableFromOrigin,
     "reachable from (2,1)" ~: reachableFrom2_2,
     "reachable from (2,1)" ~: reachableFrom2_1]
