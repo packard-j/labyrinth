@@ -11,6 +11,12 @@ data Orientation = North
 instance Ord Orientation where
   compare o1 o2 = compare (orientationToInt o1) (orientationToInt o2)
 
+instance Show Orientation where
+  show North = "↑"
+  show East  = "→"
+  show South = "↓"
+  show West  = "←"
+
 -- | Rotates an orientation clockwise by the angle that the second orientation makes with North
 rotateClockwiseBy :: Orientation -> Orientation -> Orientation
 rotateClockwiseBy orientation by = intToOrientation (sum $ map orientationToInt [orientation, by])
