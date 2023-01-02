@@ -1,8 +1,14 @@
-module State (State, PlayerPieces(..), newState, newStateWithSlide, move, kick) where
+module State
+  (State,
+   StateResult, StateError(..),
+   PlayerPieces(..),
+   newState, newStateWithSlide, move, kick) where
+import Rule
 import Board
 import Tile
 import Coordinate
 import Orientation
+import Control.Monad.Except
 
 -- | Represents the state of a game of labyrinth, including the
 -- | game board, the current spare tile, the last slide action
@@ -30,19 +36,23 @@ data PlayerPieces p = PlayerPieces
     position :: Coordinate,
     player   :: p } deriving (Show, Eq)
 
+type StateResult = Except StateError
+data StateError = NoPlayers | InvalidConfiguration | RuleBroken Rule | InvalidMove BoardError
+  deriving (Show, Eq)
+
 -- | Construct the state for a new game of labyrinth to be played on
 -- | the given board, with the specified spare tile and players.
 -- | The player pieces must be located on the board, and each player's
 -- | home and goal must be located on fixed tiles.
-newState :: Board -> Tile -> [PlayerPieces p] -> Maybe (State p)
+newState :: Board -> Tile -> [PlayerPieces p] -> StateResult (State p)
 newState = newStateWithSlide Nothing
 
 -- | Construct a state with the specified previous slide action.
-newStateWithSlide :: Maybe (Orientation, Integer) -> Board -> Tile -> [PlayerPieces p] -> Maybe (State p)
+newStateWithSlide :: Maybe (Orientation, Integer) -> Board -> Tile -> [PlayerPieces p] -> StateResult (State p)
 newStateWithSlide prevSlide gameBoard spareTile playerPieces
-  | not $ all (isOnBoard gameBoard) coords = Nothing
-  | not $ all (isOnFixedTile gameBoard) homesAndGoals = Nothing
-  | otherwise = Just $ State gameBoard prevSlide spareTile playerPieces
+  | not $ all (isOnBoard gameBoard) coords = throwError InvalidConfiguration 
+  | not $ all (isOnFixedTile gameBoard) homesAndGoals = throwError InvalidConfiguration
+  | otherwise = return $ State gameBoard prevSlide spareTile playerPieces
     where coords = position <$> playerPieces
           homesAndGoals = concatMap (\p -> [home p, goal p]) playerPieces
 
@@ -58,12 +68,12 @@ newStateWithSlide prevSlide gameBoard spareTile playerPieces
 -- |   * the player cannot move to the specified destination after the slide
 -- |   * the specified destination is the same as the player's position after
 -- |     the slide.
-move :: State p -> Orientation -> Integer -> Coordinate -> Maybe (State p, Bool)
+move :: State p -> Orientation -> Integer -> Coordinate -> StateResult (State p, Bool)
 move state dir axis to 
-  | null $ players state = Nothing
-  | lastSlide state == Just (rotateClockwiseBy dir South, axis) = Nothing
+  | null $ players state = throwError NoPlayers
+  | lastSlide state == Just (rotateClockwiseBy dir South, axis) = throwError $ RuleBroken CannotUndoPrevSlide
   | otherwise = do
-    (shiftedBoard, nextSpare) <- slide (board state) (spare state) dir axis
+    (shiftedBoard, nextSpare) <- withExcept InvalidMove $ slide (board state) (spare state) dir axis
     updatedPlayers <- updatePlayers shiftedBoard (players state) dir axis to
     return (State shiftedBoard slideAction nextSpare (rotate updatedPlayers),
                   reachedGoal $ head updatedPlayers) where
@@ -85,13 +95,13 @@ kick state
 -- |   * the destination tile cannot be reached from the player's position
 -- |     after sliding.
 -- |   * the player is already at the destination after the slide.
-updatePlayers :: Board -> [PlayerPieces p] -> Orientation -> Integer -> Coordinate -> Maybe [PlayerPieces p]
-updatePlayers _ [] _ _ _ = Just []
+updatePlayers :: Board -> [PlayerPieces p] -> Orientation -> Integer -> Coordinate -> StateResult [PlayerPieces p]
+updatePlayers _ [] _ _ _ = return []
 updatePlayers brd (p0:rest) dir axis to = do
   moved <- movePlayer brd playerAfterShift to
   if position moved == position playerAfterShift
-     then Nothing
-     else Just $ moved:tail shifted
+     then throwError $ RuleBroken MustMoveToNewTile
+     else return $ moved:tail shifted
   where
     shifted = shiftPlayer brd dir axis <$> p0:rest
     playerAfterShift = head shifted
@@ -102,11 +112,11 @@ shiftPlayer b dir axis p = p
   { position = shiftAlong b dir axis (position p) }
 
 -- | Move a player to the specified coordinate on the board, if possible.
-movePlayer :: Board -> PlayerPieces p -> Coordinate -> Maybe (PlayerPieces p)
+movePlayer :: Board -> PlayerPieces p -> Coordinate -> StateResult (PlayerPieces p)
 movePlayer gameBoard pieces to = do
-  canMove <- pathExists gameBoard (position pieces) to
-  if canMove then return moved else Nothing where
-    moved = pieces { position = to }
+  exists <- withExcept InvalidMove $ pathExists gameBoard (position pieces) to
+  if exists then return $ pieces { position = to }
+            else throwError $ RuleBroken PathMustExist
 
 -- | Rotate a list by moving the item at the head of the list to the back.
 rotate :: [a] -> [a]

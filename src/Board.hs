@@ -1,6 +1,9 @@
 {-# LANGUAGE TupleSections #-}
 module Board
-  (Board, newBoard,
+  (Board,
+   BoardResult, BoardError(..),
+   Axis(..),
+   newBoard,
    slide, shiftAlong,
    reachableTiles, pathExists,
    tileAtSafe,
@@ -10,7 +13,7 @@ import Coordinate (Coordinate(..), add)
 import Orientation (Orientation(..), toUnitVector, rotateClockwiseBy)
 import Data.Graph (Graph, Vertex, graphFromEdges, reachable)
 import Data.Set (Set, fromList, member)
-import Prelude hiding (Either(..))
+import Control.Monad.Except
 
 -- | Represents the game board of labyrinth, which consists of Tiles that
 -- | can be slid along rows or columns.
@@ -22,15 +25,20 @@ data Board = Board
     -- | The height of the board, in number of columns
     height :: Integer,
     -- | The set of axes that can be shifted, and their 0-indexed position on the board (from top-left)
-    movable :: Set (Axis, Integer) } deriving Eq
+    movable :: Set AxisIndex } deriving Eq
 
 instance Show Board where
    show board = 
      show (width board) ++ "x" ++ show (height board) ++ " board" ++ "\n" ++
      unlines (map (concatMap show) (tiles board))
 
+type BoardResult = Except BoardError
+data BoardError = OutOfBounds (Either AxisIndex Coordinate)
+                  | Immovable AxisIndex deriving (Show, Eq)
+
 -- | Represents a row or column along a Board
-data Axis = Row | Column deriving (Eq, Ord)
+data Axis = Row | Column deriving (Eq, Ord, Show)
+type AxisIndex = (Axis, Integer)
 
 -- | Create a new Board consisting of tiles using the `createTile` mapping of coordinates to tiles,
 -- | with the size specified by the given width and height
@@ -53,11 +61,11 @@ newBoard createTile w h =
 -- |  Sliding North with index 0 slides the leftmost column up, inserting the new tile at the bottom
 -- |  and producing a new spare tile that came from the top of that column.
 -- | If the axis is not movable or the index is out of bounds, Nothing is returned.
-slide :: Board -> Tile -> Orientation -> Integer -> Maybe (Board, Tile)
+slide :: Board -> Tile -> Orientation -> Integer -> BoardResult (Board, Tile)
 slide board insertedTile dir index
-  | index < 0 || index >= bound axis board = Nothing
-  | not $ member (axis, index) (movable board) = Nothing
-  | otherwise = Just (shiftedBoard, newSpare board dir index) 
+  | index < 0 || index >= bound axis board = throwError $ OutOfBounds $ Left (axis, index)
+  | not $ member (axis, index) (movable board) = throwError $ Immovable (axis, index)
+  | otherwise = return (shiftedBoard, newSpare board dir index) 
   where
     axis = toSlideAxis dir
     shiftedBoard = mapBoard board slideTiles
@@ -99,23 +107,25 @@ mapBoard board f = newBoard f (width board) (height board)
 
 -- | Access the Tile on the Board at the given Coordinate
 -- | If the coordinate is outside the bounds of the Board, Nothing is returned
-tileAtSafe :: Board -> Coordinate -> Maybe Tile
+tileAtSafe :: Board -> Coordinate -> BoardResult Tile
 tileAtSafe board coordinate
-  | isOnBoard board coordinate = Just $ tileAt board coordinate
-  | otherwise = Nothing
+  | isOnBoard board coordinate = return $ tileAt board coordinate
+  | otherwise = throwError $ OutOfBounds $ Right coordinate
 
 -- | What are the coordinates of the tiles that can be reached from the tile at the given coordinate?
 -- | This corresponds to the given tile, all the tiles it directly connects to, and all the 
 -- | tiles reachable from those.
-reachableTiles :: Board -> Coordinate -> Maybe (Set Coordinate)
+reachableTiles :: Board -> Coordinate -> BoardResult (Set Coordinate)
 reachableTiles board coordinate = 
   let (graph, coordFromVertex, vertexFromCoord) = toGraph board in 
-    do
+    case do
      vertex <- vertexFromCoord coordinate
-     return $ fromList (map coordFromVertex $ reachable graph vertex)
+     return $ fromList (map coordFromVertex $ reachable graph vertex) of
+    Just coords -> return coords
+    Nothing     -> throwError $ OutOfBounds $ Right coordinate
 
 -- | Is the tile at the given coordinate reachable from the other coordinate?
-pathExists :: Board -> Coordinate -> Coordinate -> Maybe Bool
+pathExists :: Board -> Coordinate -> Coordinate -> BoardResult Bool
 pathExists board from to = member to <$> reachableTiles board from
 
 -- | Shifts a coordinate along with a slide action as specified by the orientation and index of the axis.

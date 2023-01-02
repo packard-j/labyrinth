@@ -24,6 +24,7 @@ dependencies:
 - extra >= 1.7
 - containers >= 0.6
 - HUnit >= 1.6
+- mtl >= 2.2
 
 ghc-options:
 - -Wall
