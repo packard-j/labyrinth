@@ -32,10 +32,9 @@ instance Show Board where
      show (width board) ++ "x" ++ show (height board) ++ " board" ++ "\n" ++
      unlines (map (concatMap show) (tiles board))
 
-
 type BoardResult = Except BoardError
 data BoardError = OutOfBounds (Either AxisIndex Coordinate)
-                  | Immovable AxisIndex deriving Eq
+                  | Immovable AxisIndex deriving (Show, Eq)
 
 -- | Represents a row or column along a Board
 data Axis = Row | Column deriving (Eq, Ord, Show)
@@ -194,11 +193,3 @@ connectedAdjacentTiles board coordinate = map tileOnBoard (filter isConnected $ 
   where fromTile = tileAt board coordinate
         isConnected (c, o) = tilesConnected fromTile (tileAt board c) o 
         tileOnBoard (coord, _) = (coord, tileAt board coord)
-
-instance Show BoardError where
-  show (OutOfBounds (Left axis)) = showAxisIndex axis ++ " is out of bounds"
-  show (OutOfBounds (Right coord)) = "Coordinate " ++ show coord ++ " is out of bounds"
-  show (Immovable axis) = showAxisIndex axis ++ " is immovable"
-
-showAxisIndex :: AxisIndex -> String
-showAxisIndex (axis, index) = "Axis " ++ show axis ++ "@" ++ show index

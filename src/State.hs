@@ -3,6 +3,7 @@ module State
    StateResult, StateError(..),
    PlayerPieces(..),
    newState, newStateWithSlide, move, kick) where
+import Rule
 import Board
 import Tile
 import Coordinate
@@ -36,15 +37,8 @@ data PlayerPieces p = PlayerPieces
     player   :: p } deriving (Show, Eq)
 
 type StateResult = Except StateError
-data StateError = NoPlayers | InvalidConfiguration | RuleBroken | InvalidMove BoardError | NoPathExists
-  deriving Eq
-
-instance Show StateError where
-  show NoPlayers = "no players"
-  show InvalidConfiguration = "invalid configuration"
-  show RuleBroken = "a rule was broken"
-  show (InvalidMove bf) = "invalid move: " ++ show bf
-  show NoPathExists = "no path between tiles"
+data StateError = NoPlayers | InvalidConfiguration | RuleBroken Rule | InvalidMove BoardError
+  deriving (Show, Eq)
 
 -- | Construct the state for a new game of labyrinth to be played on
 -- | the given board, with the specified spare tile and players.
@@ -77,7 +71,7 @@ newStateWithSlide prevSlide gameBoard spareTile playerPieces
 move :: State p -> Orientation -> Integer -> Coordinate -> StateResult (State p, Bool)
 move state dir axis to 
   | null $ players state = throwError NoPlayers
-  | lastSlide state == Just (rotateClockwiseBy dir South, axis) = throwError RuleBroken
+  | lastSlide state == Just (rotateClockwiseBy dir South, axis) = throwError $ RuleBroken CannotUndoPrevSlide
   | otherwise = do
     (shiftedBoard, nextSpare) <- withExcept InvalidMove $ slide (board state) (spare state) dir axis
     updatedPlayers <- updatePlayers shiftedBoard (players state) dir axis to
@@ -106,7 +100,7 @@ updatePlayers _ [] _ _ _ = return []
 updatePlayers brd (p0:rest) dir axis to = do
   moved <- movePlayer brd playerAfterShift to
   if position moved == position playerAfterShift
-     then throwError RuleBroken
+     then throwError $ RuleBroken MustMoveToNewTile
      else return $ moved:tail shifted
   where
     shifted = shiftPlayer brd dir axis <$> p0:rest
@@ -122,7 +116,7 @@ movePlayer :: Board -> PlayerPieces p -> Coordinate -> StateResult (PlayerPieces
 movePlayer gameBoard pieces to = do
   exists <- withExcept InvalidMove $ pathExists gameBoard (position pieces) to
   if exists then return $ pieces { position = to }
-            else throwError NoPathExists
+            else throwError $ RuleBroken PathMustExist
 
 -- | Rotate a list by moving the item at the head of the list to the back.
 rotate :: [a] -> [a]

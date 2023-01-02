@@ -4,6 +4,7 @@ import Test.HUnit
 import Examples.State
 import Examples.Board
 import State
+import Rule
 import Coordinate
 import Orientation
 import Control.Monad.Except
@@ -33,13 +34,13 @@ state3x3InvalidHome = throwError InvalidConfiguration ~=? state where
                            'a' ]
 
 state3x3Unreachable :: Test
-state3x3Unreachable = throwError NoPathExists ~=? invalidMove where
+state3x3Unreachable = throwError (RuleBroken PathMustExist) ~=? invalidMove where
   invalidMove = do
     state <- state3x3
     move state North 0 $ Coordinate 0 0
 
 state3x3Unmoved :: Test
-state3x3Unmoved = throwError RuleBroken ~=? actual where
+state3x3Unmoved = throwError (RuleBroken MustMoveToNewTile) ~=? actual where
   actual = do
     state <- state3x3
     move state East 2 $ Coordinate 0 2
