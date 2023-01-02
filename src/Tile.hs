@@ -1,4 +1,4 @@
-module Tile (Tile(..), tilesConnected) where
+module Tile (Tile(..), tilesConnected, rotateTileClockwiseBy) where
 import Connector (Connector(..), sides)
 import Orientation (Orientation(..), rotateClockwiseBy)
 import Data.Set (Set, member)

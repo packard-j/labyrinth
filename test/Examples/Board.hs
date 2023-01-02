@@ -5,6 +5,7 @@ module Examples.Board
   board3x3,
   board3x3ShiftRow2L,
   board3x3ShiftCol0U,
+  board3x3ShiftCol0UAlt,
   board3x2,
   board3x2ShiftRow0R,
   board3x2ShiftCol0D) where
@@ -31,6 +32,12 @@ board3x3ShiftCol0U = fromString
   ("└─│" ++
    "┬┌┐" ++
    "└┤┴") 3 3
+
+board3x3ShiftCol0UAlt :: Board
+board3x3ShiftCol0UAlt = fromString
+  ("└─│" ++
+   "┬┌┐" ++
+   "┐┤┴") 3 3
 
 board3x2 :: Board
 board3x2 = fromString

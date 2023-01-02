@@ -13,7 +13,7 @@ state3x3Move :: Test
 state3x3Move = expected ~=? actual where
   actual = do
     state <- state3x3
-    move state North 0 $ Coordinate 0 1 
+    move state North 0 North $ Coordinate 0 1 
   expected = (,False) <$> newStateWithSlide (Just (North, 0)) board3x3ShiftCol0U (tile '│') expectedPlayers
   expectedPlayers =
     [ PlayerPieces (Coordinate 1 1)
@@ -23,6 +23,19 @@ state3x3Move = expected ~=? actual where
       PlayerPieces (Coordinate 1 1)
                    (Coordinate 1 1)
                    (Coordinate 0 1)
+                   'a' ]
+
+state3x3MoveRotate :: Test
+state3x3MoveRotate = expected ~=? (state3x3 >>= \s -> move s North 0 South $ Coordinate 1 2) where
+  expected = (,False) <$> newStateWithSlide (Just (North, 0)) board3x3ShiftCol0UAlt (tile '│') expectedPlayers
+  expectedPlayers = 
+    [ PlayerPieces (Coordinate 1 1)
+                   (Coordinate 1 1)
+                   (Coordinate 2 1)
+                   'b',
+      PlayerPieces (Coordinate 1 1)
+                   (Coordinate 1 1)
+                   (Coordinate 1 2)
                    'a' ]
 
 state3x3InvalidHome :: Test
@@ -37,13 +50,13 @@ state3x3Unreachable :: Test
 state3x3Unreachable = throwError (RuleBroken PathMustExist) ~=? invalidMove where
   invalidMove = do
     state <- state3x3
-    move state North 0 $ Coordinate 0 0
+    move state North 0 North $ Coordinate 0 0
 
 state3x3Unmoved :: Test
 state3x3Unmoved = throwError (RuleBroken MustMoveToNewTile) ~=? actual where
   actual = do
     state <- state3x3
-    move state East 2 $ Coordinate 0 2
+    move state East 2 North $ Coordinate 0 2
 
 state3x3Kick :: Test
 state3x3Kick = expected ~=? kick <$> state3x3 where
@@ -68,6 +81,7 @@ stateKickEmpty = expected ~=? kick <$> emptyState where
 stateTests :: Test
 stateTests = TestList 
   [ "move player a to (0,1)" ~: state3x3Move,
+    "move player and rotate spare" ~: state3x3MoveRotate,
     "cannot place a home on a movable tile" ~: state3x3InvalidHome,
     "cannot move to the same tile" ~: state3x3Unmoved,
     "cannot move player a to (0,0)" ~: state3x3Unreachable,

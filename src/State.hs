@@ -68,17 +68,18 @@ newStateWithSlide prevSlide gameBoard spareTile playerPieces
 -- |   * the player cannot move to the specified destination after the slide
 -- |   * the specified destination is the same as the player's position after
 -- |     the slide.
-move :: State p -> Orientation -> Integer -> Coordinate -> StateResult (State p, Bool)
-move state dir axis to 
+move :: State p -> Orientation -> Integer -> Orientation -> Coordinate -> StateResult (State p, Bool)
+move state slideDir axis rotateSpareBy moveTo 
   | null $ players state = throwError NoPlayers
-  | lastSlide state == Just (rotateClockwiseBy dir South, axis) = throwError $ RuleBroken CannotUndoPrevSlide
+  | lastSlide state == Just (rotateClockwiseBy slideDir South, axis) = throwError $ RuleBroken CannotUndoPrevSlide
   | otherwise = do
-    (shiftedBoard, nextSpare) <- withExcept InvalidMove $ slide (board state) (spare state) dir axis
-    updatedPlayers <- updatePlayers shiftedBoard (players state) dir axis to
+    (shiftedBoard, nextSpare) <- withExcept InvalidMove $ slide (board state) rotatedSpare slideDir axis
+    updatedPlayers <- updatePlayers shiftedBoard (players state) slideDir axis moveTo
     return (State shiftedBoard slideAction nextSpare (rotate updatedPlayers),
                   reachedGoal $ head updatedPlayers) where
+      rotatedSpare = rotateTileClockwiseBy (spare state) rotateSpareBy
       reachedGoal p = position p == goal p
-      slideAction = Just (dir, axis)
+      slideAction = Just (slideDir, axis)
 
 -- | Remove the current player from the game state.
 -- | Produces the game state without that player, and the player (if the 
