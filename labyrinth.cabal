@@ -29,6 +29,7 @@ library
       Connector
       Coordinate
       Orientation
+      Rule
       State
       Tile
   other-modules:
