@@ -1,5 +1,5 @@
 {-# LANGUAGE TupleSections #-}
-module Board
+module Maze.Board
   (Board,
    BoardResult, BoardError(..),
    Axis(..),
@@ -8,9 +8,9 @@ module Board
    reachableTiles, pathExists,
    tileAtSafe,
    isOnBoard, isOnFixedTile) where
-import Tile (Tile(..), tilesConnected)
-import Coordinate (Coordinate(..), add)
-import Orientation (Orientation(..), toUnitVector, rotateClockwiseBy)
+import Maze.Tile (Tile(..), tilesConnected)
+import Maze.Coordinate (Coordinate(..), add)
+import Maze.Orientation (Orientation(..), toUnitVector, rotateClockwiseBy)
 import Data.Graph (Graph, Vertex, graphFromEdges, reachable)
 import Data.Set (Set, fromList, member)
 import Control.Monad.Except

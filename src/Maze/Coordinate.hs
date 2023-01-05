@@ -1,4 +1,4 @@
-module Coordinate (Coordinate(..), add) where
+module Maze.Coordinate (Coordinate(..), add) where
 
 -- | Represents a position on a Board as a (column, row) index
 -- | where (0, 0) is the top-left and (width-1, height-1) is the bottom right.

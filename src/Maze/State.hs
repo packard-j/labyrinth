@@ -1,13 +1,13 @@
-module State
+module Maze.State
   (State,
    StateResult, StateError(..),
    PlayerPieces(..),
    newState, newStateWithSlide, move, kick) where
-import Rule
-import Board
-import Tile
-import Coordinate
-import Orientation
+import Maze.Rule
+import Maze.Board
+import Maze.Tile
+import Maze.Coordinate
+import Maze.Orientation
 import Control.Monad.Except
 
 -- | Represents the state of a game of labyrinth, including the

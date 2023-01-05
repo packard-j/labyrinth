@@ -1,6 +1,6 @@
-module Tile (Tile(..), tilesConnected, rotateTileClockwiseBy) where
-import Connector (Connector(..), sides)
-import Orientation (Orientation(..), rotateClockwiseBy)
+module Maze.Tile (Tile(..), tilesConnected, rotateTileClockwiseBy) where
+import Maze.Connector (Connector(..), sides)
+import Maze.Orientation (Orientation(..), rotateClockwiseBy)
 import Data.Set (Set, member)
 import qualified Data.Set (map)
 
