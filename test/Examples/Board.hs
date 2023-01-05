@@ -8,7 +8,8 @@ module Examples.Board
   board3x3ShiftCol0UAlt,
   board3x2,
   board3x2ShiftRow0R,
-  board3x2ShiftCol0D) where
+  board3x2ShiftCol0D,
+  board7x7) where
 import Maze.Board
 import Maze.Tile
 import Maze.Orientation
@@ -53,6 +54,16 @@ board3x2ShiftCol0D :: Board
 board3x2ShiftCol0D = fromString
   ("└─┐" ++
    "┌┴┤") 3 2
+
+board7x7 :: Board
+board7x7 = fromString (
+ "│─┐└┌┘┬" ++
+ "│─┐└┌┘┬" ++
+ "│─┐└┌┘┬" ++
+ "│─┐└┌┘┬" ++
+ "│─┐└┌┘┬" ++
+ "│─┐└┌┘┬" ++
+ "│─┐└┌┘┬") 7 7
 
 genTile :: Coordinate -> Tile
 genTile (Coordinate x y) =
