@@ -1,10 +1,10 @@
 module BoardTest (boardTests) where
 import Test.HUnit
 import Examples.Board
-import Board
-import Tile
-import Coordinate
-import Orientation
+import Maze.Board
+import Maze.Tile
+import Maze.Coordinate
+import Maze.Orientation
 import Data.Set (fromList)
 import Control.Monad.Zip (munzip)
 import Control.Monad.Except

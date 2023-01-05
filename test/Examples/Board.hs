@@ -9,11 +9,11 @@ module Examples.Board
   board3x2,
   board3x2ShiftRow0R,
   board3x2ShiftCol0D) where
-import Board
-import Tile
-import Orientation
-import Connector
-import Coordinate
+import Maze.Board
+import Maze.Tile
+import Maze.Orientation
+import Maze.Connector
+import Maze.Coordinate
 
 -- │─│
 -- └┌┐

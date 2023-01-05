@@ -1,8 +1,8 @@
 module TileTest (tileTests) where
 import Test.HUnit
-import Tile
-import Connector
-import Orientation
+import Maze.Tile
+import Maze.Connector
+import Maze.Orientation
 
 barPlusConnected :: Test
 barPlusConnected =
