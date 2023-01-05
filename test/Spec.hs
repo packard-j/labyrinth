@@ -2,12 +2,14 @@ import Test.HUnit
 import BoardTest
 import TileTest
 import StateTest
+import JSON.Spec
 
 tests :: Test
 tests = TestList
   [ "tiles" ~: tileTests,
     "board" ~: boardTests,
-    "state" ~: stateTests ]
+    "state" ~: stateTests,
+    "json"  ~: jsonTests]
 
 main :: IO ()
 main = do

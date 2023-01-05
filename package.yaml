@@ -27,6 +27,7 @@ dependencies:
 - mtl >= 2.2
 - aeson >= 2.0
 - attoparsec >= 0.14
+- scientific >= 0.3
 - bytestring >= 0.10
 - io-streams >= 1.5
 

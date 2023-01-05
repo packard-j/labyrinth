@@ -25,14 +25,15 @@ source-repository head
 
 library
   exposed-modules:
-      Board
-      Connector
-      Coordinate
-      Orientation
-      Rule
-      State
+      Data.JSON.Coordinate
+      Maze.Board
+      Maze.Connector
+      Maze.Coordinate
+      Maze.Orientation
+      Maze.Rule
+      Maze.State
+      Maze.Tile
       System.IO.Streams.JSON
-      Tile
   other-modules:
       Paths_labyrinth
   hs-source-dirs:
@@ -48,6 +49,7 @@ library
     , extra >=1.7
     , io-streams >=1.5
     , mtl >=2.2
+    , scientific >=0.3
   default-language: Haskell2010
 
 executable labyrinth-exe
@@ -68,6 +70,7 @@ executable labyrinth-exe
     , io-streams >=1.5
     , labyrinth
     , mtl >=2.2
+    , scientific >=0.3
   default-language: Haskell2010
 
 test-suite labyrinth-test
@@ -77,6 +80,8 @@ test-suite labyrinth-test
       BoardTest
       Examples.Board
       Examples.State
+      JSON.Coordinate
+      JSON.Spec
       StateTest
       TileTest
       Paths_labyrinth
@@ -94,4 +99,5 @@ test-suite labyrinth-test
     , io-streams >=1.5
     , labyrinth
     , mtl >=2.2
+    , scientific >=0.3
   default-language: Haskell2010
