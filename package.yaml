@@ -25,6 +25,10 @@ dependencies:
 - containers >= 0.6
 - HUnit >= 1.6
 - mtl >= 2.2
+- aeson >= 2.0
+- attoparsec >= 0.14
+- bytestring >= 0.10
+- io-streams >= 1.5
 
 ghc-options:
 - -Wall
