@@ -28,6 +28,7 @@ dependencies:
 - aeson >= 2.0
 - attoparsec >= 0.14
 - scientific >= 0.3
+- vector >= 0.12
 - bytestring >= 0.10
 - io-streams >= 1.5
 
