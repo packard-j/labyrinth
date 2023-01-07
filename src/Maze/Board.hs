@@ -18,8 +18,9 @@ import Control.Monad.Except
 -- | Represents the game board of labyrinth, which consists of Tiles that
 -- | can be slid along rows or columns.
 -- | Only certain rows and columns can be slid, as designated by the `movable` field.
-data Board = Board 
-  { tiles  :: [[Tile]],
+-- | A Board of type `a' has `a's on every Tile.
+data Board a = Board 
+  { tiles  :: [[Tile a]],
     -- | The width of the board, in number of columns
     width  :: Integer,
     -- | The height of the board, in number of columns
@@ -27,7 +28,7 @@ data Board = Board
     -- | The set of axes that can be shifted, and their 0-indexed position on the board (from top-left)
     movable :: Set AxisIndex } deriving Eq
 
-instance Show Board where
+instance Show (Board a) where
    show board = 
      show (width board) ++ "x" ++ show (height board) ++ " board" ++ "\n" ++
      unlines (map (concatMap show) (tiles board))
@@ -42,7 +43,7 @@ type AxisIndex = (Axis, Integer)
 
 -- | Create a new Board consisting of tiles using the `createTile` mapping of coordinates to tiles,
 -- | with the size specified by the given width and height
-newBoard :: (Coordinate -> Tile) -> Integer -> Integer -> Board
+newBoard :: (Coordinate -> Tile a) -> Integer -> Integer -> Board a
 newBoard createTile w h =
   Board 
     (map boardRow [0..h-1])
@@ -61,7 +62,7 @@ newBoard createTile w h =
 -- |  Sliding North with index 0 slides the leftmost column up, inserting the new tile at the bottom
 -- |  and producing a new spare tile that came from the top of that column.
 -- | If the axis is not movable or the index is out of bounds, Nothing is returned.
-slide :: Board -> Tile -> Orientation -> Integer -> BoardResult (Board, Tile)
+slide :: Board a -> Tile a -> Orientation -> Integer -> BoardResult (Board a, Tile a)
 slide board insertedTile dir index
   | index < 0 || index >= bound axis board = throwError $ OutOfBounds $ Left (axis, index)
   | not $ member (axis, index) (movable board) = throwError $ Immovable (axis, index)
@@ -80,7 +81,7 @@ slide board insertedTile dir index
 
 -- | Produces the coordinate at which a spare tile will be inserted for
 -- | the given shift direction and (valid) axis index
-insertPosition :: Board -> Orientation -> Integer -> Coordinate
+insertPosition :: Board a -> Orientation -> Integer -> Coordinate
 insertPosition board North index = Coordinate index $ height board - 1
 insertPosition     _ South index = Coordinate index 0
 insertPosition     _ East  index = Coordinate 0 index
@@ -88,7 +89,7 @@ insertPosition board West  index = Coordinate (width board - 1) index
 
 -- | Produces the tile that becomes the spare after a shift in the given direction
 -- | along the axis specified by the (valid) axis index
-newSpare :: Board -> Orientation -> Integer -> Tile
+newSpare :: Board a -> Orientation -> Integer -> Tile a
 newSpare board dir index = tileAt board $ sparePosition dir where
   sparePosition North = Coordinate index 0
   sparePosition South = Coordinate index $ height board - 1
@@ -102,12 +103,12 @@ toSlideAxis South = Column
 toSlideAxis     _ = Row
 
 -- | Produces new equal sized board from the given board with tiles specified by `f`
-mapBoard :: Board -> (Coordinate -> Tile) -> Board
+mapBoard :: Board a -> (Coordinate -> Tile a) -> Board a
 mapBoard board f = newBoard f (width board) (height board)
 
 -- | Access the Tile on the Board at the given Coordinate
 -- | If the coordinate is outside the bounds of the Board, Nothing is returned
-tileAtSafe :: Board -> Coordinate -> BoardResult Tile
+tileAtSafe :: Board a -> Coordinate -> BoardResult (Tile a)
 tileAtSafe board coordinate
   | isOnBoard board coordinate = return $ tileAt board coordinate
   | otherwise = throwError $ OutOfBounds $ Right coordinate
@@ -115,7 +116,7 @@ tileAtSafe board coordinate
 -- | What are the coordinates of the tiles that can be reached from the tile at the given coordinate?
 -- | This corresponds to the given tile, all the tiles it directly connects to, and all the 
 -- | tiles reachable from those.
-reachableTiles :: Board -> Coordinate -> BoardResult (Set Coordinate)
+reachableTiles :: Board a -> Coordinate -> BoardResult (Set Coordinate)
 reachableTiles board coordinate = 
   let (graph, coordFromVertex, vertexFromCoord) = toGraph board in 
     case do
@@ -125,11 +126,11 @@ reachableTiles board coordinate =
     Nothing     -> throwError $ OutOfBounds $ Right coordinate
 
 -- | Is the tile at the given coordinate reachable from the other coordinate?
-pathExists :: Board -> Coordinate -> Coordinate -> BoardResult Bool
+pathExists :: Board a -> Coordinate -> Coordinate -> BoardResult Bool
 pathExists board from to = member to <$> reachableTiles board from
 
 -- | Shifts a coordinate along with a slide action as specified by the orientation and index of the axis.
-shiftAlong :: Board -> Orientation -> Integer -> Coordinate -> Coordinate
+shiftAlong :: Board a -> Orientation -> Integer -> Coordinate -> Coordinate
 shiftAlong board dir index from = if affected then to else from where
   affected = case (toSlideAxis dir, from) of
                (Row,    Coordinate _ y) -> y == index
@@ -138,30 +139,30 @@ shiftAlong board dir index from = if affected then to else from where
 
 -- | Slide a coordinate in the specified direction, looping around to the other side if it reaches
 -- | the end.
-slideWrap :: Board -> Orientation -> Coordinate -> Coordinate
+slideWrap :: Board a -> Orientation -> Coordinate -> Coordinate
 slideWrap board dir coord = wrap $ add coord (toUnitVector dir) where
   wrap (Coordinate x y) = Coordinate (x `mod` width board) (y `mod` height board)
 
 -- | Is the given coordinate within the bounds of the board?
-isOnBoard :: Board -> Coordinate -> Bool
+isOnBoard :: Board a -> Coordinate -> Bool
 isOnBoard board (Coordinate x y)
   | x < 0 || x >= width board  = False
   | y < 0 || y >= height board = False
   | otherwise                  = True
 
 -- | Does the given coordinate correspond to a tile that cannot be moved?
-isOnFixedTile :: Board -> Coordinate -> Bool
+isOnFixedTile :: Board a -> Coordinate -> Bool
 isOnFixedTile board (Coordinate x y) = 
   isOnBoard board (Coordinate x y) && onImmovableRow && onImmovableCol where
   onImmovableRow = not $ member (Column, x) (movable board)
   onImmovableCol = not $ member (Row, y)    (movable board)
 
 -- | Access the tile at the given coordinate, without bounds checking.
-tileAt :: Board -> Coordinate -> Tile
+tileAt :: Board a -> Coordinate -> Tile a
 tileAt board (Coordinate x y) = tiles board !! fromIntegral y !! fromIntegral x
 
 -- | Convert the board to a Graph, and functions that map to and from Graph vertices
-toGraph :: Board -> (Graph, Vertex -> Coordinate, Coordinate -> Maybe Vertex)
+toGraph :: Board a -> (Graph, Vertex -> Coordinate, Coordinate -> Maybe Vertex)
 toGraph board = (graph, coordFromVertex, vertexFromCoord)
   where (graph, nodeFromVertex, vertexFromCoord) = graphFromEdges $ toAdjacencyList board
         coordFromVertex v = second (nodeFromVertex v)
@@ -169,18 +170,18 @@ toGraph board = (graph, coordFromVertex, vertexFromCoord)
 
 -- | Convert the board to an adjacency list of tiles, their coordinates, and the coordinates
 -- | of the tiles they directly connect to.
-toAdjacencyList :: Board -> [(Tile, Coordinate, [Coordinate])]
+toAdjacencyList :: Board a -> [(Tile a, Coordinate, [Coordinate])]
 toAdjacencyList board = map toNode $ tileList board
   where toNode (coord, tile) = (tile, coord, map fst (connectedAdjacentTiles board coord))
 
 -- | Produces a list of coordinates on a board, paired with the tiles at those coordinates.
-tileList :: Board -> [(Coordinate, Tile)]
+tileList :: Board a -> [(Coordinate, Tile a)]
 tileList board = concatMap iterateBoardRow [0..height board - 1]
   where iterateBoardRow r = map (\c -> (Coordinate c r, tileAt board (Coordinate c r))) [0..width board - 1]
 
 -- | Produces a list of coordinates on the board that are ajacent (one tile away in a cardinal direction)
 -- | to the given coordinate.
-adjacentCoordinates :: Board -> Coordinate -> [(Coordinate, Orientation)]
+adjacentCoordinates :: Board a -> Coordinate -> [(Coordinate, Orientation)]
 adjacentCoordinates board coordinate = filter (isOnBoard board . fst) adjacents
   where orientations = [North, East, South, West]
         offsets = map toUnitVector orientations 
@@ -188,7 +189,7 @@ adjacentCoordinates board coordinate = filter (isOnBoard board . fst) adjacents
 
 -- | Produces a list of tiles that are directly connected to the tile at the given coordinate, pair with
 -- | their coordinates on the board.
-connectedAdjacentTiles :: Board -> Coordinate -> [(Coordinate, Tile)]
+connectedAdjacentTiles :: Board a -> Coordinate -> [(Coordinate, Tile a)]
 connectedAdjacentTiles board coordinate = map tileOnBoard (filter isConnected $ adjacentCoordinates board coordinate)
   where fromTile = tileAt board coordinate
         isConnected (c, o) = tilesConnected fromTile (tileAt board c) o 

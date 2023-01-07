@@ -13,14 +13,14 @@ import Control.Monad.Except
 -- | Represents the state of a game of labyrinth, including the
 -- | game board, the current spare tile, the last slide action
 -- | that occurred, and the list of players in the game. 
-data State p = State
-  { board :: Board,
+data State p t = State
+  { board :: Board t,
     -- | The most recent slide action that has been performed by
     -- | a player, if one has occured yet. Otherwise, Nothing.
     lastSlide :: Maybe (Orientation, Integer),
     -- | The current spare tile that will be used on the next
     -- | slide action.
-    spare :: Tile,
+    spare :: Tile t,
     -- | The list of players and their respective home, goal, and
     -- | position coordinates.
     -- | The player that is next to take a turn is at the head of
@@ -44,11 +44,11 @@ data StateError = NoPlayers | InvalidConfiguration | RuleBroken Rule | InvalidMo
 -- | the given board, with the specified spare tile and players.
 -- | The player pieces must be located on the board, and each player's
 -- | home and goal must be located on fixed tiles.
-newState :: Board -> Tile -> [PlayerPieces p] -> StateResult (State p)
+newState :: Board t -> Tile t -> [PlayerPieces p] -> StateResult (State p t)
 newState = newStateWithSlide Nothing
 
 -- | Construct a state with the specified previous slide action.
-newStateWithSlide :: Maybe (Orientation, Integer) -> Board -> Tile -> [PlayerPieces p] -> StateResult (State p)
+newStateWithSlide :: Maybe (Orientation, Integer) -> Board t -> Tile t -> [PlayerPieces p] -> StateResult (State p t)
 newStateWithSlide prevSlide gameBoard spareTile playerPieces
   | not $ all (isOnBoard gameBoard) coords = throwError InvalidConfiguration 
   | not $ all (isOnFixedTile gameBoard) homesAndGoals = throwError InvalidConfiguration
@@ -68,7 +68,7 @@ newStateWithSlide prevSlide gameBoard spareTile playerPieces
 -- |   * the player cannot move to the specified destination after the slide
 -- |   * the specified destination is the same as the player's position after
 -- |     the slide.
-move :: State p -> Orientation -> Integer -> Orientation -> Coordinate -> StateResult (State p, Bool)
+move :: State p t -> Orientation -> Integer -> Orientation -> Coordinate -> StateResult (State p t, Bool)
 move state slideDir axis rotateSpareBy moveTo 
   | null $ players state = throwError NoPlayers
   | lastSlide state == Just (rotateClockwiseBy slideDir South, axis) = throwError $ RuleBroken CannotUndoPrevSlide
@@ -84,7 +84,7 @@ move state slideDir axis rotateSpareBy moveTo
 -- | Remove the current player from the game state.
 -- | Produces the game state without that player, and the player (if the 
 -- | state had any players)
-kick :: State p -> (State p, Maybe p)
+kick :: State p t -> (State p t, Maybe p)
 kick state
   | null $ players state = (state, Nothing)
   | otherwise = (state { players = tail $ players state }, Just $ player $ head $ players state)
@@ -96,7 +96,7 @@ kick state
 -- |   * the destination tile cannot be reached from the player's position
 -- |     after sliding.
 -- |   * the player is already at the destination after the slide.
-updatePlayers :: Board -> [PlayerPieces p] -> Orientation -> Integer -> Coordinate -> StateResult [PlayerPieces p]
+updatePlayers :: Board t -> [PlayerPieces p] -> Orientation -> Integer -> Coordinate -> StateResult [PlayerPieces p]
 updatePlayers _ [] _ _ _ = return []
 updatePlayers brd (p0:rest) dir axis to = do
   moved <- movePlayer brd playerAfterShift to
@@ -108,12 +108,12 @@ updatePlayers brd (p0:rest) dir axis to = do
     playerAfterShift = head shifted
 
 -- | Shift a player's position along with a slide action on a board, if it was affected.
-shiftPlayer :: Board -> Orientation -> Integer -> PlayerPieces p -> PlayerPieces p
+shiftPlayer :: Board t -> Orientation -> Integer -> PlayerPieces p -> PlayerPieces p
 shiftPlayer b dir axis p = p 
   { position = shiftAlong b dir axis (position p) }
 
 -- | Move a player to the specified coordinate on the board, if possible.
-movePlayer :: Board -> PlayerPieces p -> Coordinate -> StateResult (PlayerPieces p)
+movePlayer :: Board t -> PlayerPieces p -> Coordinate -> StateResult (PlayerPieces p)
 movePlayer gameBoard pieces to = do
   exists <- withExcept InvalidMove $ pathExists gameBoard (position pieces) to
   if exists then return $ pieces { position = to }
