@@ -10,7 +10,7 @@ import Control.Monad.Zip (munzip)
 import Control.Monad.Except
 
 -- | Perform N successive slides, each one using the spare tile from the previous
-slideN :: Board -> Tile -> [(Orientation, Integer)] -> BoardResult (Board, Tile)
+slideN :: Board a -> Tile a -> [(Orientation, Integer)] -> BoardResult (Board a, Tile a)
 slideN board spare = foldM slideOne (board, spare) where
   slideOne (b, s) (dir, index) = slide b s dir index
 

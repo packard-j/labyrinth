@@ -76,7 +76,7 @@ stateKickEmpty = expected ~=? kick <$> emptyState where
   expected = do
     state <- emptyState
     return (state, Nothing)
-  emptyState = newState board3x3 (tile '└') [] :: StateResult (Maze.State.State Char)
+  emptyState = newState board3x3 (tile '└') [] :: StateResult (Maze.State.State Char ())
 
 stateTests :: Test
 stateTests = TestList 
