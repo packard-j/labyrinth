@@ -3,10 +3,10 @@ module StateTest (stateTests) where
 import Test.HUnit
 import Examples.State
 import Examples.Board
-import State
-import Rule
-import Coordinate
-import Orientation
+import Maze.State
+import Maze.Rule
+import Maze.Coordinate
+import Maze.Orientation
 import Control.Monad.Except
 
 state3x3Move :: Test
@@ -76,7 +76,7 @@ stateKickEmpty = expected ~=? kick <$> emptyState where
   expected = do
     state <- emptyState
     return (state, Nothing)
-  emptyState = newState board3x3 (tile '└') [] :: StateResult (State.State Char)
+  emptyState = newState board3x3 (tile '└') [] :: StateResult (Maze.State.State Char ())
 
 stateTests :: Test
 stateTests = TestList 

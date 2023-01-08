@@ -1,5 +1,5 @@
-module Orientation (Orientation(..), rotateClockwiseBy, toUnitVector) where
-import Coordinate (Coordinate(..))
+module Maze.Orientation (Orientation(..), rotateClockwiseBy, toUnitVector) where
+import Maze.Coordinate (Coordinate(..))
 
 -- | Represents a direction along the Board, where North is up (towards y == 0)
 data Orientation = North

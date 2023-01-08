@@ -1,5 +1,5 @@
-module Connector (Connector(..), sides) where
-import Orientation (Orientation(..))
+module Maze.Connector (Connector(..), sides) where
+import Maze.Orientation (Orientation(..))
 import Data.Set (Set, fromList)
 
 -- | Represents the "shape" of a Tile, which determines the sides it makes connections to
