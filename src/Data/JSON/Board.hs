@@ -25,8 +25,8 @@ instance FromJSON JSONBoard where
       gems       <- parseMatrix parseTreasure treasures
       enforceUnique gems
       treasureAt <- parseCoordinateMap rows cols gems
-      tiles      <- parseMatrix parseConnector connectors
-      tileAt     <- parseCoordinateMap rows cols tiles
+      tileAt     <- parseMatrix parseConnector connectors >>= 
+                    parseCoordinateMap rows cols
       pure $ newBoard (\coord -> tileAt coord $ treasureAt coord) rows cols
     rows = 7
     cols = 7
@@ -35,6 +35,11 @@ instance FromJSON JSONBoard where
                             else fail "treasures are not mutually distinct"
     unique (x:xs) = x `notElem` xs && unique xs
     unique [] = True
+
+instance ToJSON JSONBoard where
+  toJSON (JSONBoard board) = object
+    [ "connectors" .= (map show <$> tiles board),
+      "treasures" .= (map contents <$> tiles board)]
 
 type Matrix a = [[a]]
 

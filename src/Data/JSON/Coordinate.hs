@@ -15,6 +15,9 @@ instance FromJSON JSONCoordinate where
       <*> parseIndex (coord .: "row#")
     parseIndex num = parseRange 0 6 $ parseInteger num
 
+instance ToJSON JSONCoordinate where
+  toJSON (JSONCoordinate (Coordinate x y)) = object ["row#" .= y, "column#" .= x]
+
 -- | Parse an Integer from a Scientific, failing if the Scientific
 -- | is not in the range of Int.
 parseInteger :: Parser Scientific -> Parser Integer

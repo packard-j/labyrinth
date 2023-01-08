@@ -6,7 +6,7 @@ module Maze.Board
    newBoard,
    slide, shiftAlong,
    reachableTiles, pathExists,
-   tileAtSafe,
+   tileAtSafe, tiles,
    isOnBoard, isOnFixedTile) where
 import Maze.Tile (Tile(..), tilesConnected)
 import Maze.Coordinate (Coordinate(..), add)
