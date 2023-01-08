@@ -30,6 +30,7 @@ dependencies:
 - scientific >= 0.3
 - vector >= 0.12
 - bytestring >= 0.10
+- text >= 1.2
 - io-streams >= 1.5
 
 ghc-options:

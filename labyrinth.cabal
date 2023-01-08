@@ -51,6 +51,7 @@ library
     , io-streams >=1.5
     , mtl >=2.2
     , scientific >=0.3
+    , text >=1.2
     , vector >=0.12
   default-language: Haskell2010
 
@@ -73,6 +74,7 @@ executable labyrinth-exe
     , labyrinth
     , mtl >=2.2
     , scientific >=0.3
+    , text >=1.2
     , vector >=0.12
   default-language: Haskell2010
 
@@ -104,5 +106,6 @@ test-suite labyrinth-test
     , labyrinth
     , mtl >=2.2
     , scientific >=0.3
+    , text >=1.2
     , vector >=0.12
   default-language: Haskell2010
