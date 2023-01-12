@@ -1,21 +1,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ApplicativeDo #-}
-module Data.JSON.Board (JSONBoard(..), gemNames) where
+module Data.JSON.Board (JSONBoard(..), Gem, allGems) where
 import Data.Aeson
 import Data.Aeson.Types
-import Data.Vector (toList, (!))
+import Data.Vector ((!))
+import qualified Data.Vector as Vector (toList)
 import Maze.Board
 import Maze.Tile
 import Maze.Orientation
 import Maze.Connector
 import Maze.Coordinate
-import Data.Set (Set, fromList, member)
+import Data.Set (Set, fromList, toList, member, size)
 import Data.Text (unpack)
+import Data.Tuple
+import Test.QuickCheck
 
 newtype JSONBoard = JSONBoard (Board Treasure) deriving (Show, Eq)
-
-type Treasure = (Gem, Gem)
-type Gem = String
 
 instance FromJSON JSONBoard where
   parseJSON value = JSONBoard <$> parseBoard value where
@@ -30,25 +30,44 @@ instance FromJSON JSONBoard where
       pure $ newBoard (\coord -> tileAt coord $ treasureAt coord) rows cols
     rows = 7
     cols = 7
-    enforceUnique gems = if unique (UnorderedPair <$> concat gems) 
+    enforceUnique gems = if uniqueTreasures (concat gems)
                             then pure () 
                             else fail "treasures are not mutually distinct"
-    unique (x:xs) = x `notElem` xs && unique xs
-    unique [] = True
 
 instance ToJSON JSONBoard where
   toJSON (JSONBoard board) = object
     [ "connectors" .= (map show <$> tiles board),
       "treasures" .= (map contents <$> tiles board)]
 
+instance Arbitrary JSONBoard where
+  arbitrary = do
+    f <- suchThat arbitrary unique
+    return $ JSONBoard (newBoard f cols rows) where
+      unique f = uniqueTreasures (treasures $ newBoard f cols rows)
+      treasures board = contents <$> concat (tiles board)
+      rows = 7
+      cols = 7
+            
+type Treasure = (Gem, Gem)
+newtype Gem = Gem String deriving (Show, Eq, Ord)
+
+instance ToJSON Gem where
+  toJSON (Gem name) = toJSON name
+
+instance Arbitrary Gem where
+  arbitrary = elements (toList allGems)
+
 type Matrix a = [[a]]
 
-newtype UnorderedPair a  = UnorderedPair (a, a)
+newtype UnorderedPair a = UnorderedPair (a, a)
 
--- | Equality for unordered pairs
+instance (Ord a) => Ord (UnorderedPair a) where
+  compare (UnorderedPair a) (UnorderedPair b) 
+    | UnorderedPair a == UnorderedPair b = EQ
+    | otherwise = compare a b
+
 instance (Eq a) => Eq (UnorderedPair a) where
-  (UnorderedPair (a1, a2)) == (UnorderedPair other) =
-    (a1, a2) == other || (a2, a1) == other
+  (UnorderedPair a) == (UnorderedPair b) = a == b || a == swap b
 
 -- | Parse a [[`a']] from a JSON Array of JSON Arrays.
 parseMatrix :: (Value -> Parser a) -> Value -> Parser (Matrix a)
@@ -56,7 +75,7 @@ parseMatrix parseElement = parseListOf "rows" (parseListOf "cols" parseElement)
 
 -- | Parse a [`a'] from a JSON Array 
 parseListOf :: String -> (Value -> Parser a) -> Value -> Parser [a]
-parseListOf name parseElement = withArray name $ \elements -> sequenceA (toList $ parseElement <$> elements)
+parseListOf name parseElement = withArray name $ \elems -> sequenceA (Vector.toList $ parseElement <$> elems)
 
 -- | Parse a mapping of Coordinates to to elements in the given Matrix of size (rows x cols)
 parseCoordinateMap :: Integer -> Integer -> Matrix a -> Parser (Coordinate -> a)
@@ -96,13 +115,16 @@ parseTreasure = withArray "treasure" gems where
     | otherwise = fail "invalid treasure size"
   parseGem = withText "gem" $ \text -> 
     let name = unpack text in 
-    if member name gemNames
-       then pure name
+    if member (Gem name) allGems
+       then pure $ Gem name
        else fail "invalid gem"
 
+uniqueTreasures :: [Treasure] -> Bool
+uniqueTreasures treasures = size (fromList $ UnorderedPair <$> treasures) == length treasures
+
 -- | The set of valid gem names
-gemNames :: Set String
-gemNames = fromList [ 
+allGems :: Set Gem
+allGems = fromList $ Gem <$> [ 
     "alexandrite-pear-shape",
     "alexandrite",
     "almandine-garnet",
