@@ -11,8 +11,12 @@ tests = TestList
     "state" ~: stateTests,
     "json"  ~: jsonTests]
 
+props :: IO Bool
+props = and <$> sequence [ jsonProps ]
+
 main :: IO ()
 main = do
   _ <- runTestTT tests
+  _ <- props
   return ()
 

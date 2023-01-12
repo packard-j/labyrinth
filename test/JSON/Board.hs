@@ -1,17 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
-module JSON.Board (boardTests) where
+{-# LANGUAGE TemplateHaskell #-}
+module JSON.Board (boardTests, boardProps) where
 import Test.HUnit
+import Test.QuickCheck (Property, (===), quickCheckAll)
 import Examples.Board
 import Data.JSON.Board
 import Data.Aeson
 import Data.Aeson.KeyMap
 import Data.Aeson.QQ.Simple
+import Data.Aeson.Types
 
 parseBoard :: Value -> Result JSONBoard
 parseBoard board = fromJSON $ addTreasures board (genTreasures 7 7)
 
-addTreasures :: Value -> [[(String, String)]] -> Value
+addTreasures :: Value -> [[(Gem, Gem)]] -> Value
 addTreasures (Object entries) treasures = object $ toList entries ++ [("treasures", toJSON treasures)]
 addTreasures _ _ = error "not an object"
 
@@ -77,4 +80,13 @@ boardTests = TestList
     "invalid tile" ~: parseInvalidTile,
     "duplicate treasures" ~: parseDuplicate,
     "too small" ~: parseTooSmall ]
-  
+
+-- property-based tests --
+
+-- | Test that conversion to JSON and back produces the original board
+prop_convert :: JSONBoard -> Property
+prop_convert board = parseEither parseJSON (toJSON board) === Right board
+
+return []
+boardProps :: IO Bool
+boardProps = $quickCheckAll
