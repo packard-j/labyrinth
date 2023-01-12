@@ -32,6 +32,7 @@ dependencies:
 - bytestring >= 0.10
 - text >= 1.2
 - io-streams >= 1.5
+- QuickCheck >= 2.14
 
 ghc-options:
 - -Wall

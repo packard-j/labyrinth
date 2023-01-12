@@ -42,6 +42,7 @@ library
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
       HUnit >=1.6
+    , QuickCheck >=2.14
     , aeson >=2.0
     , attoparsec >=0.14
     , base >=4.7 && <5
@@ -64,6 +65,7 @@ executable labyrinth-exe
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HUnit >=1.6
+    , QuickCheck >=2.14
     , aeson >=2.0
     , attoparsec >=0.14
     , base >=4.7 && <5
@@ -96,6 +98,7 @@ test-suite labyrinth-test
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       HUnit >=1.6
+    , QuickCheck >=2.14
     , aeson >=2.0
     , attoparsec >=0.14
     , base >=4.7 && <5
