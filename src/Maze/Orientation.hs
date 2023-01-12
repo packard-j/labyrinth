@@ -1,5 +1,6 @@
 module Maze.Orientation (Orientation(..), rotateClockwiseBy, toUnitVector) where
 import Maze.Coordinate (Coordinate(..))
+import Test.QuickCheck
 
 -- | Represents a direction along the Board, where North is up (towards y == 0)
 data Orientation = North
@@ -25,6 +26,9 @@ instance Enum Orientation where
   fromEnum West  = 3
   -- | The Orientation reached after rotating clockwise 90 degrees `i` times from North
   toEnum i = [North, East, South, West] !! (i `mod` 4)
+
+instance Arbitrary Orientation where
+  arbitrary = chooseEnum (North, West)
 
 -- | Rotates an orientation clockwise by the angle that the second orientation makes with North
 rotateClockwiseBy :: Orientation -> Orientation -> Orientation

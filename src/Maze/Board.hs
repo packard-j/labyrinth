@@ -14,6 +14,7 @@ import Maze.Orientation (Orientation(..), toUnitVector, rotateClockwiseBy)
 import Data.Graph (Graph, Vertex, graphFromEdges, reachable)
 import Data.Set (Set, fromList, member)
 import Control.Monad.Except
+import Test.QuickCheck
 
 -- | Represents the game board of labyrinth, which consists of Tiles that
 -- | can be slid along rows or columns.
@@ -32,6 +33,13 @@ instance Show (Board a) where
    show board = 
      show (width board) ++ "x" ++ show (height board) ++ " board" ++ "\n" ++
      unlines (map (concatMap show) (tiles board))
+
+instance Arbitrary a => Arbitrary (Board a) where
+  arbitrary = do
+    cols <- chooseInteger (1, 100)
+    rows <- chooseInteger (1, 100)
+    f <- arbitrary
+    return $ newBoard f cols rows
 
 type BoardResult = Except BoardError
 data BoardError = OutOfBounds (Either AxisIndex Coordinate)

@@ -3,6 +3,7 @@ import Maze.Connector (Connector(..), sides)
 import Maze.Orientation (Orientation(..), rotateClockwiseBy)
 import Data.Set (Set, member)
 import qualified Data.Set (map)
+import Test.QuickCheck
 
 -- | Represents a piece on the Board, including its shape and orientation
 -- | Also holds a value `a'.
@@ -27,6 +28,13 @@ instance Show (Tile a) where
 instance Eq a => Eq (Tile a) where
   t1 == t2 = tileConnections t1 == tileConnections t2 &&
              contents t1 == contents t2
+
+instance Arbitrary a => Arbitrary (Tile a) where
+  arbitrary = do
+    a <- arbitrary
+    connector <- chooseEnum (Bar, Plus)
+    orientation <- chooseEnum (North, West)
+    return $ Tile connector orientation a
 
 contents :: Tile a -> a
 contents (Tile _ _ a) = a
