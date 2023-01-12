@@ -11,7 +11,7 @@ module Examples.Board
   board3x2ShiftCol0D,
   board7x7,
   genTreasures) where
-import Data.JSON.Board (gemNames)
+import Data.JSON.Board (Gem, allGems)
 import Maze.Board
 import Maze.Tile
 import Maze.Orientation
@@ -58,7 +58,7 @@ board3x2ShiftCol0D = fromString
   ("└─┐" ++
    "┌┴┤") 3 2
 
-board7x7 :: Board (String, String)
+board7x7 :: Board (Gem, Gem)
 board7x7 = fromStringWithTreasures (
  "│─┐└┌┘┬" ++
  "│─┐└┌┘┬" ++
@@ -80,13 +80,13 @@ genTile (Coordinate x y) =
     connectors   = [Bar, L, T, Plus]
     orientations = [North, East, South, West]
 
-genTreasures :: Int -> Int -> [[(String, String)]]
+genTreasures :: Int -> Int -> [[(Gem, Gem)]]
 genTreasures rows columns = chunks rows columns treasures where
   chunks n chunkSize l
    | n == 0    = []
    | otherwise = take chunkSize l:chunks (n-1) chunkSize (drop chunkSize l)
   treasures = (,) <$> gems <*> gems
-  gems = toList gemNames
+  gems = toList allGems
 
 fromString :: String -> Int -> Int -> Board ()
 fromString s width height = fromStringWithTreasures s treasures width height where
