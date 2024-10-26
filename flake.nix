@@ -1,15 +1,15 @@
 {
   description = "labyrinth";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   inputs.flake-utils.url = "github:numtide/flake-utils";
-
+  # Taken from https://docs.haskellstack.org/en/stable/topics/nix_integration/#supporting-both-nix-and-non-nix-developers
   outputs = { self, nixpkgs, flake-utils }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = nixpkgs.legacyPackages.${system};
 
         hPkgs =
-          pkgs.haskell.packages."ghc98"; # need to match Stackage LTS version
+          pkgs.haskell.packages."ghc966"; # need to match Stackage LTS version
                                            # from stack.yaml resolver
 
         myDevTools = [
