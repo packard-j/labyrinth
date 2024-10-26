@@ -1,6 +1,6 @@
 {
-  description = "my project description";
-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  description = "labyrinth";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs = { self, nixpkgs, flake-utils }:
@@ -9,7 +9,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
 
         hPkgs =
-          pkgs.haskell.packages."ghc948"; # need to match Stackage LTS version
+          pkgs.haskell.packages."ghc98"; # need to match Stackage LTS version
                                            # from stack.yaml resolver
 
         myDevTools = [
